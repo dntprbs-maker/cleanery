@@ -1,12 +1,13 @@
 // 카카오 i 오픈빌더 스킬 서버
 // Vercel 배포 시 경로: api/kakao-skill.js
 //
-// [2026-07 수정 2] 성공 케이스에도 진단용 로그를 남기고, 카카오 "콜백" 기능이
-// 켜져있는 요청(userRequest.callbackUrl 존재)이면 5초 제한 없이 최대 25초까지
-// 여유를 두고 처리한 뒤 callbackUrl로 결과를 별도 전송하도록 개선했습니다.
-// (예약 안내처럼 긴 응답이 5초 제한에 걸려 아예 전달되지 않던 문제 대응)
+// [2026-07 수정 3] 콜백이 켜져있는 요청이라도 무조건 대기 메시지부터 보여주지 않도록 개선.
+// OpenRouter 호출을 한 번만 시작해두고, 4.2초 안에 끝나면 콜백을 쓰지 않고 바로 응답합니다
+// (짧은 답변은 예전처럼 즉시 감). 4.2초를 넘기면 그때 비로소 콜백 모드로 전환해서
+// 카카오가 대기 메시지를 보여주게 하고, 같은 호출이 끝날 때까지(최대 25초) 기다렸다가
+// callbackUrl로 결과를 별도 전송합니다 (예약 안내처럼 긴 응답 대응).
 //
-// 콜백이 없는 일반 요청은 기존처럼 4.2초 안에 못 받으면 폴백 문구를 즉시 보냅니다.
+// 콜백 자체가 꺼져있는 요청(callbackUrl 없음)은 기존처럼 4.2초 안에 못 받으면 폴백 문구를 보냅니다.
 const { SYSTEM_PROMPT } = require('../lib/business-info');
 const { getSession, saveSession } = require('../lib/session-store');
 const { notifyAdmin } = require('../lib/notify');
@@ -164,36 +165,59 @@ module.exports = async (req, res) => {
     return cleanedText;
   }
 
-  // 콜백이 켜져있는 요청: 5초 제한 없이 최대 25초까지 여유있게 처리 후 callbackUrl로 결과 전송
-  if (callbackUrl) {
-    res.status(200).json({ version: '2.0', useCallback: true });
-    console.log('[kakao-skill] sent useCallback ack, processing in background...');
+  const FAST_TIMEOUT_MS = 4200; // 카카오 5초 SLA 안에 안전하게 들어오는 기준
+  const overallTimeoutMs = callbackUrl ? 25000 : FAST_TIMEOUT_MS;
+  // OpenRouter 호출은 딱 한 번만 시작합니다 (빠른 경로/콜백 경로가 같은 호출을 공유).
+  const answerPromise = callOpenRouter(messagesForModel, overallTimeoutMs);
 
-    const finalAnswer = (await callOpenRouter(messagesForModel, 25000)) || FALLBACK_TEXT;
-    await finishAndSave(finalAnswer);
-    const cleanedText = handleAdminAlert(finalAnswer);
-
-    try {
-      const cbRes = await fetch(callbackUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version: '2.0', template: { outputs: buildOutputs(cleanedText) } }),
-      });
-      console.log('[kakao-skill] callback POST status:', cbRes.status);
-    } catch (e) {
-      console.error('[kakao-skill] callback POST failed:', e.message);
+  if (!callbackUrl) {
+    // 콜백 자체가 꺼져있는 요청: 기존처럼 4.2초 안에 못 받으면 폴백 문구 즉시 전송
+    const finalAnswer = (await answerPromise) || FALLBACK_TEXT;
+    if (finalAnswer === FALLBACK_TEXT) {
+      console.warn('[kakao-skill] fell back to default text (timeout or error)');
+    } else {
+      console.log('[kakao-skill] success (no callback), answer length:', finalAnswer.length);
     }
+    const cleanedText = handleAdminAlert(finalAnswer);
+    respond(res, cleanedText);
+    await finishAndSave(finalAnswer);
     return;
   }
 
-  // 일반 요청: 기존처럼 4.2초 안에 못 받으면 폴백 문구 즉시 전송
-  const finalAnswer = (await callOpenRouter(messagesForModel, 4200)) || FALLBACK_TEXT;
-  if (finalAnswer === FALLBACK_TEXT) {
-    console.warn('[kakao-skill] fell back to default text (timeout or error)');
-  } else {
-    console.log('[kakao-skill] success, answer length:', finalAnswer.length);
+  // 콜백이 가능한 요청: 먼저 4.2초 안에 끝나는지 지켜보고, 끝나면 콜백 없이 바로 응답합니다.
+  const FAST_TIMEOUT = Symbol('fast-timeout');
+  const raced = await Promise.race([
+    answerPromise,
+    new Promise((resolve) => setTimeout(() => resolve(FAST_TIMEOUT), FAST_TIMEOUT_MS)),
+  ]);
+
+  if (raced !== FAST_TIMEOUT) {
+    // 4.2초 안에 끝남: 콜백(대기 메시지) 없이 즉시 응답
+    const finalAnswer = raced || FALLBACK_TEXT;
+    console.log('[kakao-skill] fast path (no callback needed), answer length:', finalAnswer.length);
+    const cleanedText = handleAdminAlert(finalAnswer);
+    respond(res, cleanedText);
+    await finishAndSave(finalAnswer);
+    return;
   }
-  const cleanedText = handleAdminAlert(finalAnswer);
-  respond(res, cleanedText);
+
+  // 4.2초를 넘김: 이제서야 콜백 모드로 전환. 카카오가 대기 메시지를 보여주는 동안
+  // 원래 시작해뒀던 answerPromise가 끝나길(최대 25초 예산 안에서) 기다렸다가 콜백으로 전송합니다.
+  res.status(200).json({ version: '2.0', useCallback: true });
+  console.log('[kakao-skill] exceeded fast timeout, switched to callback mode...');
+
+  const finalAnswer = (await answerPromise) || FALLBACK_TEXT;
   await finishAndSave(finalAnswer);
+  const cleanedText = handleAdminAlert(finalAnswer);
+
+  try {
+    const cbRes = await fetch(callbackUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: '2.0', template: { outputs: buildOutputs(cleanedText) } }),
+    });
+    console.log('[kakao-skill] callback POST status:', cbRes.status);
+  } catch (e) {
+    console.error('[kakao-skill] callback POST failed:', e.message);
+  }
 };
