@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>크리너리 상담내역</title>
+<style>
+  :root{
+    --ink:#10241f;
+    --paper:#f3f6f4;
+    --panel:#ffffff;
+    --line:#d7e2dd;
+    --teal:#0f6b5c;
+    --teal-deep:#0a4a40;
+    --amber:#c17d2e;
+    --muted:#5b6d67;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --serif: 'Source Serif Pro', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    padding-bottom:60px;
+  }
+  header{
+    background:var(--teal-deep);
+    color:#eafaf5;
+    padding:28px 20px 22px;
+  }
+  header h1{
+    margin:0 0 4px;
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:1.4rem;
+  }
+  header p{
+    margin:0;
+    font-size:0.82rem;
+    color:#bfe3d8;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:#7fc9b6;
+    margin-bottom:6px;
+    display:block;
+  }
+  main{
+    max-width:720px;
+    margin:0 auto;
+    padding:16px;
+  }
+  .toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .count-badge{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--muted);
+  }
+  button{
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:0.82rem;
+    padding:8px 14px;
+    border-radius:7px;
+    border:none;
+    cursor:pointer;
+    background:var(--teal);
+    color:#fff;
+  }
+  button:hover{background:var(--teal-deep);}
+  button.ghost{background:transparent; color:var(--muted); border:1px solid var(--line);}
+  button.ghost:hover{background:#eef4f2;}
+  .empty, .loading{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--muted);
+    font-size:0.9rem;
+    border:1px dashed var(--line);
+    border-radius:10px;
+    background:#fff;
+  }
+  .convo-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    cursor:pointer;
+    transition:box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .convo-card:hover{
+    border-color:var(--teal);
+    box-shadow:0 6px 16px -10px rgba(10,74,64,0.3);
+  }
+  .convo-top{
+    display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+  }
+  .convo-user{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--teal-deep);
+    font-weight:700;
+  }
+  .convo-time{
+    font-size:0.72rem;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .convo-preview{
+    margin-top:6px;
+    font-size:0.85rem;
+    color:#334943;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .convo-count{
+    display:inline-block;
+    margin-top:6px;
+    font-family:var(--mono);
+    font-size:0.68rem;
+    background:#e4f2ee;
+    color:var(--teal-deep);
+    padding:2px 8px;
+    border-radius:20px;
+  }
+  #detailView{ display:none; }
+  .detail-header{
+    display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .detail-header .uid{
+    font-family:var(--mono);
+    font-size:0.85rem;
+    color:var(--teal-deep);
+    font-weight:700;
+  }
+  .chat-log{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .bubble{
+    max-width:82%;
+    padding:10px 14px;
+    border-radius:14px;
+    font-size:0.88rem;
+    white-space:pre-wrap;
+    line-height:1.5;
+  }
+  .bubble.user{
+    align-self:flex-end;
+    background:var(--teal);
+    color:#fff;
+    border-bottom-right-radius:4px;
+  }
+  .bubble.assistant{
+    align-self:flex-start;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-bottom-left-radius:4px;
+  }
+  .bubble .role-label{
+    display:block;
+    font-family:var(--mono);
+    font-size:0.65rem;
+    opacity:0.7;
+    margin-bottom:4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="eyebrow">CLEANERY · 상담내역 (테스트용, 접근제한 없음)</span>
+  <h1>카카오봇 상담내역</h1>
+  <p>고객과 챗봇이 나눈 대화를 확인할 수 있어요</p>
+</header>
+
+<main>
+  <div id="listView">
+    <div class="toolbar">
+      <span class="count-badge" id="countBadge">불러오는 중…</span>
+      <button class="ghost" onclick="loadList()">🔄 새로고침</button>
+    </div>
+    <div id="listArea">
+      <div class="loading">상담내역을 불러오는 중…</div>
+    </div>
+  </div>
+
+  <div id="detailView">
+    <div class="detail-header">
+      <button class="ghost" onclick="showList()">← 목록으로</button>
+      <span class="uid" id="detailUid"></span>
+    </div>
+    <div class="chat-log" id="chatLog"></div>
+  </div>
+</main>
+
+<script>
+function timeAgo(ts){
+  if (!ts) return '-';
+  const diff = Date.now() - ts;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return '방금 전';
+  if (min < 60) return `${min}분 전`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}시간 전`;
+  const day = Math.floor(hr / 24);
+  return `${day}일 전`;
+}
+
+function escapeHtml(str){
+  if (str === undefined || str === null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+async function loadList(){
+  const listArea = document.getElementById('listArea');
+  const countBadge = document.getElementById('countBadge');
+  listArea.innerHTML = '<div class="loading">상담내역을 불러오는 중…</div>';
+  countBadge.textContent = '불러오는 중…';
+
+  try{
+    const res = await fetch('/api/conversations');
+    const data = await res.json();
+    const sessions = data.sessions || [];
+    countBadge.textContent = sessions.length + '건';
+
+    if (sessions.length === 0){
+      listArea.innerHTML = '<div class="empty">아직 상담내역이 없어요. 카카오톡으로 챗봇과 대화가 시작되면 여기에 표시돼요.</div>';
+      return;
+    }
+
+    listArea.innerHTML = sessions.map(s => `
+      <div class="convo-card" onclick="openDetail('${escapeHtml(s.userId)}')">
+        <div class="convo-top">
+          <span class="convo-user">${escapeHtml(s.userId)}</span>
+          <span class="convo-time">${timeAgo(s.updatedAt)}</span>
+        </div>
+        <div class="convo-preview">${escapeHtml(s.preview || '(내용 없음)')}</div>
+        <span class="convo-count">${s.messageCount || 0}개 메시지</span>
+      </div>
+    `).join('');
+  }catch(e){
+    listArea.innerHTML = '<div class="empty">불러오는 중 오류가 발생했어요. 새로고침을 눌러보세요.</div>';
+  }
+}
+
+async function openDetail(userId){
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'block';
+  document.getElementById('detailUid').textContent = userId;
+  const chatLog = document.getElementById('chatLog');
+  chatLog.innerHTML = '<div class="loading">대화를 불러오는 중…</div>';
+
+  try{
+    const res = await fetch('/api/conversations?id=' + encodeURIComponent(userId));
+    const data = await res.json();
+    const messages = data.messages || [];
+
+    if (messages.length === 0){
+      chatLog.innerHTML = '<div class="empty">대화 내용이 없어요.</div>';
+      return;
+    }
+
+    chatLog.innerHTML = messages.map(m => `
+      <div class="bubble ${m.role === 'user' ? 'user' : 'assistant'}">
+        <span class="role-label">${m.role === 'user' ? '고객' : '크리너리 봇'}</span>
+        ${escapeHtml(m.content)}
+      </div>
+    `).join('');
+  }catch(e){
+    chatLog.innerHTML = '<div class="empty">불러오는 중 오류가 발생했어요.</div>';
+  }
+}
+
+function showList(){
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('listView').style.display = 'block';
+}
+
+loadList();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>크리너리 견적 프로그램</title>
+<style>
+  :root{
+    --ink:#10241f;
+    --paper:#f3f6f4;
+    --panel:#ffffff;
+    --line:#d7e2dd;
+    --teal:#0f6b5c;
+    --teal-deep:#0a4a40;
+    --amber:#c17d2e;
+    --danger:#b3423a;
+    --muted:#5b6d67;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --serif: 'Source Serif Pro', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    padding-bottom:80px;
+  }
+  header{
+    background:var(--teal-deep);
+    color:#eafaf5;
+    padding:28px 20px 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    right:-40px; top:-40px;
+    width:180px;height:180px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%);
+  }
+  header h1{
+    margin:0 0 4px;
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:1.5rem;
+    letter-spacing:0.2px;
+  }
+  header p{
+    margin:0;
+    font-size:0.85rem;
+    color:#bfe3d8;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:#7fc9b6;
+    margin-bottom:6px;
+    display:block;
+  }
+  main{
+    max-width:920px;
+    margin:0 auto;
+    padding:0 16px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-top:-18px;
+    box-shadow:0 8px 24px -16px rgba(10,74,64,0.25);
+    position:relative;
+    z-index:2;
+  }
+  .card-body{padding:20px;}
+  .section-title{
+    font-family:var(--serif);
+    font-size:1.05rem;
+    font-weight:600;
+    margin:0 0 14px;
+    color:var(--teal-deep);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-title .n{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    background:var(--teal);
+    color:#fff;
+    padding:2px 7px;
+    border-radius:20px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
+    gap:12px 14px;
+  }
+  .field{display:flex; flex-direction:column; gap:4px;}
+  .field.wide{grid-column:1 / -1;}
+  label{
+    font-size:0.72rem;
+    color:var(--muted);
+    font-weight:600;
+    letter-spacing:0.2px;
+  }
+  input, select, textarea{
+    font-family:var(--sans);
+    font-size:0.88rem;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#fbfdfc;
+    color:var(--ink);
+    width:100%;
+  }
+  textarea{resize:vertical; min-height:44px;}
+  input:focus, select:focus, textarea:focus{
+    outline:2px solid var(--teal);
+    outline-offset:1px;
+    border-color:var(--teal);
+  }
+  .divider{
+    height:1px;
+    background:var(--line);
+    margin:20px 0;
+  }
+  .actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  button{
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:0.85rem;
+    padding:10px 18px;
+    border-radius:7px;
+    border:none;
+    cursor:pointer;
+    transition:transform 0.08s ease, opacity 0.15s ease;
+  }
+  button:active{transform:scale(0.98);}
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-primary:hover{background:var(--teal-deep);}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--line);}
+  .btn-ghost:hover{background:#eef4f2;}
+  .btn-danger{background:transparent; color:var(--danger); border:1px solid #e6c9c6;}
+  .btn-danger:hover{background:#fbeeed;}
+
+  .list-header{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin:28px 0 12px;
+  }
+  .list-header h2{
+    font-family:var(--serif);
+    font-size:1.1rem;
+    margin:0;
+    color:var(--teal-deep);
+  }
+  .count-badge{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--muted);
+  }
+  .empty{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--muted);
+    font-size:0.9rem;
+    border:1px dashed var(--line);
+    border-radius:10px;
+    background:#fff;
+  }
+  .record{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+    margin-bottom:12px;
+    position:relative;
+  }
+  .record-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .record-title{
+    font-weight:700;
+    font-size:0.98rem;
+  }
+  .record-type{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:0.68rem;
+    background:#e4f2ee;
+    color:var(--teal-deep);
+    padding:2px 8px;
+    border-radius:20px;
+    margin-left:8px;
+    letter-spacing:0.3px;
+  }
+  .record-date{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--muted);
+  }
+  .record-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(110px,1fr));
+    gap:8px 14px;
+    margin-top:12px;
+    font-size:0.82rem;
+  }
+  .record-grid div span.k{
+    display:block;
+    color:var(--muted);
+    font-size:0.68rem;
+    margin-bottom:1px;
+  }
+  .money{font-family:var(--mono); font-weight:600;}
+  .diff-pos{color:var(--amber);}
+  .diff-neg{color:var(--danger);}
+  .record-note{
+    margin-top:10px;
+    font-size:0.83rem;
+    color:#334943;
+    background:#f6f9f8;
+    border-left:3px solid var(--teal);
+    padding:8px 10px;
+    border-radius:0 6px 6px 0;
+    white-space:pre-wrap;
+  }
+  .record-actions{
+    display:flex; gap:8px; margin-top:12px;
+  }
+  .record-actions button{padding:6px 12px; font-size:0.78rem;}
+  .toast{
+    position:fixed;
+    bottom:20px; left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--teal-deep);
+    color:#fff;
+    padding:10px 20px;
+    border-radius:30px;
+    font-size:0.85rem;
+    opacity:0;
+    pointer-events:none;
+    transition:all 0.25s ease;
+    z-index:50;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+  .loading{
+    text-align:center;
+    padding:30px;
+    color:var(--muted);
+    font-size:0.85rem;
+  }
+  @media (max-width:560px){
+    .card-body{padding:16px;}
+    header{padding:22px 16px 20px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="eyebrow">CLEANERY · 견적 프로그램</span>
+  <h1>크리너리 견적 프로그램</h1>
+  <p>상가·사무실·공장·특수청소 현장 기록부터 견적서 발행까지, 한 곳에서</p>
+</header>
+
+<main>
+  <div class="card">
+    <div class="card-body">
+      <h3 class="section-title"><span class="n">01</span> 기본 정보</h3>
+      <div class="grid">
+        <div class="field">
+          <label>견적일자</label>
+          <input type="date" id="f_date" />
+        </div>
+        <div class="field wide">
+          <label>현장명 / 코드</label>
+          <input type="text" id="f_site" placeholder="예: 역삼동 A사무실" />
+        </div>
+        <div class="field">
+          <label>유형</label>
+          <select id="f_type">
+            <option value="아파트">아파트</option>
+            <option value="빌라">빌라</option>
+            <option value="다세대주택">다세대주택</option>
+            <option value="단독주택">단독주택</option>
+            <option value="상가주택">상가주택</option>
+            <option value="상가">상가</option>
+            <option value="사무실">사무실</option>
+            <option value="공장">공장</option>
+            <option value="특수청소">특수청소</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>평수(면적)</label>
+          <input type="number" id="f_area" placeholder="평" />
+        </div>
+        <div class="field">
+          <label>층수</label>
+          <input type="number" id="f_floors" placeholder="개 층" />
+        </div>
+        <div class="field">
+          <label>층고(m)</label>
+          <input type="number" step="0.1" id="f_height" placeholder="m" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 class="section-title"><span class="n">02</span> 작업 조건</h3>
+      <div class="grid">
+        <div class="field">
+          <label>투입인원수</label>
+          <input type="number" id="f_workers" placeholder="명" />
+        </div>
+        <div class="field">
+          <label>실제작업시간(h)</label>
+          <input type="number" step="0.5" id="f_hours" placeholder="시간" />
+        </div>
+        <div class="field">
+          <label>오염도(1~5)</label>
+          <select id="f_dirt">
+            <option value="1">1 · 거의 깨끗</option>
+            <option value="2">2</option>
+            <option value="3" selected>3 · 보통</option>
+            <option value="4">4</option>
+            <option value="5">5 · 매우 심함</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>방치기간(개월)</label>
+          <input type="number" id="f_neglect" placeholder="개월" />
+        </div>
+        <div class="field">
+          <label>유리/필름 면적</label>
+          <select id="f_glass">
+            <option value="없음">없음</option>
+            <option value="있음">있음</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>엘리베이터</label>
+          <select id="f_elevator">
+            <option value="있음">있음</option>
+            <option value="없음">없음</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>주차 가능여부</label>
+          <select id="f_parking">
+            <option value="가능">가능</option>
+            <option value="불가">불가</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label>기타 특이사항</label>
+          <textarea id="f_special" placeholder="곰팡이, 니코틴, 유리 오염 등"></textarea>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 class="section-title"><span class="n">03</span> 금액 / 결과</h3>
+      <div class="grid">
+        <div class="field">
+          <label>최초 견적금액(원)</label>
+          <input type="text" inputmode="decimal" id="f_quote" placeholder="0 또는 73*10000+50000" onblur="evalMoneyField('f_quote')" />
+        </div>
+        <div class="field">
+          <label>최종 청구금액(원)</label>
+          <input type="text" inputmode="decimal" id="f_final" placeholder="0 또는 수식 입력 가능" onblur="evalMoneyField('f_final')" />
+        </div>
+        <div class="field">
+          <label>원가(인건비 등, 원)</label>
+          <input type="text" inputmode="decimal" id="f_cost" placeholder="0 또는 수식 입력 가능" onblur="evalMoneyField('f_cost')" />
+        </div>
+        <div class="field wide" style="margin-top:-6px;">
+          <span style="font-size:0.72rem; color:var(--muted);">💡 숫자만 입력해도 되고, 계산식을 그대로 입력해도 자동 계산돼요 (예: <code>73*10000+50000</code>, <code>350000+30000-15000</code>)</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 class="section-title"><span class="n">04</span> 후기</h3>
+      <div class="grid">
+        <div class="field">
+          <label>고객만족도 / 재계약</label>
+          <input type="text" id="f_satisfaction" placeholder="예: 만족, 재계약 의향 있음" />
+        </div>
+        <div class="field wide">
+          <label>다음 참고 메모</label>
+          <textarea id="f_memo" placeholder="다음번엔 이렇게 견적내면 좋겠다는 메모"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" onclick="saveRecord()">기록 저장</button>
+        <button class="btn-ghost" onclick="resetForm()">입력 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="list-header">
+    <h2>저장된 기록</h2>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="btn-ghost" onclick="addSampleRecord()" style="font-size:0.78rem; padding:6px 12px;">🧪 샘플 데이터 추가</button>
+      <span class="count-badge" id="countBadge">불러오는 중…</span>
+    </div>
+  </div>
+
+  <div id="listArea">
+    <div class="loading">기록을 불러오는 중…</div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<div id="copyModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(10,36,31,0.55); z-index:100; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#fff; border-radius:12px; max-width:520px; width:100%; padding:22px; box-shadow:0 20px 60px -20px rgba(0,0,0,0.4);">
+    <h3 style="margin:0 0 6px; font-family:var(--serif); color:var(--teal-deep);">일정 생성용 정보</h3>
+    <p style="margin:0 0 12px; font-size:0.82rem; color:var(--muted);">아래 "복사하기"를 누르면 클립보드에 담겨요. 안 되면 글자를 직접 선택해서 복사해주세요.</p>
+    <textarea id="copyModalText" readonly style="width:100%; min-height:260px; font-family:var(--mono); font-size:0.8rem; padding:12px; border:1px solid var(--line); border-radius:8px; background:#fbfdfc; white-space:pre-wrap;"></textarea>
+    <div style="display:flex; gap:10px; margin-top:14px; justify-content:flex-end;">
+      <button class="btn-ghost" onclick="closeCopyModal()">닫기</button>
+      <button class="btn-primary" onclick="copyModalContent()">📋 복사하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let records = [];
+let editingId = null;
+
+function parseMoneyValue(str){
+  if (str === undefined || str === null) return NaN;
+  const cleaned = String(str).replace(/,/g,'').trim();
+  if (cleaned === '') return NaN;
+  return parseFloat(cleaned);
+}
+
+function evalMoneyField(id){
+  const el = document.getElementById(id);
+  let raw = el.value.replace(/,/g,'').trim();
+  if (raw === '') return;
+  // 안전한 사칙연산 문자만 허용 (숫자, + - * / ( ) . 공백)
+  if (!/^[0-9+\-*/(). ]+$/.test(raw)){
+    showToast('숫자나 사칙연산(+ - * /)만 입력할 수 있어요');
+    return;
+  }
+  try{
+    const result = Function('"use strict"; return (' + raw + ')')();
+    if (typeof result === 'number' && isFinite(result)){
+      el.value = Math.round(result).toLocaleString('ko-KR');
+    }
+  }catch(e){
+    // 계산 불가한 수식이면 그대로 둠 (저장 시 다시 한번 체크됨)
+  }
+}
+
+function fmtMoney(n){
+  if (n === null || n === undefined || n === '' || isNaN(n)) return '-';
+  return Number(n).toLocaleString('ko-KR');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+async function loadRecords(){
+  try{
+    const res = await fetch('/api/tracker');
+    const data = await res.json();
+    records = data.records || [];
+  }catch(e){
+    records = [];
+  }
+  renderList();
+}
+
+async function persist(){
+  try{
+    const r = await fetch('/api/tracker', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ records })
+    });
+    if (!r.ok) throw new Error('save failed');
+  }catch(e){
+    showToast('저장 중 오류가 발생했어요');
+  }
+}
+
+function readForm(){
+  return {
+    date: document.getElementById('f_date').value,
+    site: document.getElementById('f_site').value.trim(),
+    type: document.getElementById('f_type').value,
+    area: document.getElementById('f_area').value,
+    floors: document.getElementById('f_floors').value,
+    height: document.getElementById('f_height').value,
+    workers: document.getElementById('f_workers').value,
+    hours: document.getElementById('f_hours').value,
+    dirt: document.getElementById('f_dirt').value,
+    neglect: document.getElementById('f_neglect').value,
+    glass: document.getElementById('f_glass').value,
+    elevator: document.getElementById('f_elevator').value,
+    parking: document.getElementById('f_parking').value,
+    special: document.getElementById('f_special').value.trim(),
+    quote: parseMoneyValue(document.getElementById('f_quote').value),
+    final: parseMoneyValue(document.getElementById('f_final').value),
+    cost: parseMoneyValue(document.getElementById('f_cost').value),
+    satisfaction: document.getElementById('f_satisfaction').value.trim(),
+    memo: document.getElementById('f_memo').value.trim(),
+  };
+}
+
+function fillForm(r){
+  document.getElementById('f_date').value = r.date || '';
+  document.getElementById('f_site').value = r.site || '';
+  document.getElementById('f_type').value = r.type || '상가';
+  document.getElementById('f_area').value = r.area || '';
+  document.getElementById('f_floors').value = r.floors || '';
+  document.getElementById('f_height').value = r.height || '';
+  document.getElementById('f_workers').value = r.workers || '';
+  document.getElementById('f_hours').value = r.hours || '';
+  document.getElementById('f_dirt').value = r.dirt || '3';
+  document.getElementById('f_neglect').value = r.neglect || '';
+  document.getElementById('f_glass').value = r.glass || '없음';
+  document.getElementById('f_elevator').value = r.elevator || '있음';
+  document.getElementById('f_parking').value = r.parking || '가능';
+  document.getElementById('f_special').value = r.special || '';
+  document.getElementById('f_quote').value = (r.quote !== undefined && r.quote !== null && r.quote !== '' && !isNaN(r.quote)) ? Number(r.quote).toLocaleString('ko-KR') : '';
+  document.getElementById('f_final').value = (r.final !== undefined && r.final !== null && r.final !== '' && !isNaN(r.final)) ? Number(r.final).toLocaleString('ko-KR') : '';
+  document.getElementById('f_cost').value = (r.cost !== undefined && r.cost !== null && r.cost !== '' && !isNaN(r.cost)) ? Number(r.cost).toLocaleString('ko-KR') : '';
+  document.getElementById('f_satisfaction').value = r.satisfaction || '';
+  document.getElementById('f_memo').value = r.memo || '';
+}
+
+function resetForm(){
+  document.querySelectorAll('#listArea, main').length; // no-op guard
+  ['f_date','f_site','f_area','f_floors','f_height','f_workers','f_hours',
+   'f_neglect','f_special','f_quote','f_final','f_cost','f_satisfaction','f_memo']
+   .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_type').value = '상가';
+  document.getElementById('f_dirt').value = '3';
+  document.getElementById('f_glass').value = '없음';
+  document.getElementById('f_elevator').value = '있음';
+  document.getElementById('f_parking').value = '가능';
+  editingId = null;
+}
+
+async function saveRecord(){
+  evalMoneyField('f_quote');
+  evalMoneyField('f_final');
+  evalMoneyField('f_cost');
+  const data = readForm();
+  if (!data.site){
+    showToast('현장명을 입력해주세요');
+    return;
+  }
+  if (editingId){
+    const idx = records.findIndex(r => r.id === editingId);
+    if (idx > -1) records[idx] = { ...records[idx], ...data };
+    showToast('기록을 수정했어요');
+  } else {
+    records.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), ...data });
+    showToast('새 기록을 저장했어요');
+  }
+  await persist();
+  resetForm();
+  renderList();
+}
+
+async function deleteRecord(id){
+  records = records.filter(r => r.id !== id);
+  await persist();
+  renderList();
+  showToast('기록을 삭제했어요');
+}
+
+function editRecord(id){
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  fillForm(r);
+  editingId = id;
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast('내용을 불러왔어요. 수정 후 저장을 눌러주세요');
+}
+
+function renderList(){
+  const listArea = document.getElementById('listArea');
+  const countBadge = document.getElementById('countBadge');
+  countBadge.textContent = records.length + '건';
+
+  if (records.length === 0){
+    listArea.innerHTML = '<div class="empty">아직 기록이 없어요. 위 폼을 채우고 "기록 저장"을 눌러보세요.</div>';
+    return;
+  }
+
+  const sorted = [...records].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  listArea.innerHTML = sorted.map(r => {
+    const quote = parseFloat(r.quote);
+    const final = parseFloat(r.final);
+    const cost = parseFloat(r.cost);
+    let diffHtml = '-';
+    if (!isNaN(quote) && quote !== 0 && !isNaN(final)){
+      const diff = ((final - quote) / quote) * 100;
+      const cls = diff > 0 ? 'diff-pos' : (diff < 0 ? 'diff-neg' : '');
+      diffHtml = `<span class="${cls}">${diff > 0 ? '+' : ''}${diff.toFixed(1)}%</span>`;
+    }
+    let profitHtml = '-';
+    if (!isNaN(final) && !isNaN(cost)){
+      profitHtml = fmtMoney(final - cost) + '원';
+    }
+
+    return `
+      <div class="record">
+        <div class="record-top">
+          <div>
+            <span class="record-title">${escapeHtml(r.site || '(현장명 없음)')}</span>
+            <span class="record-type">${escapeHtml(r.type || '')}</span>
+          </div>
+          <span class="record-date">${escapeHtml(r.date || '-')}</span>
+        </div>
+        <div class="record-grid">
+          <div><span class="k">평수</span>${escapeHtml(r.area || '-')}평</div>
+          <div><span class="k">층수/층고</span>${escapeHtml(r.floors || '-')}층 / ${escapeHtml(r.height || '-')}m</div>
+          <div><span class="k">인원/시간</span>${escapeHtml(r.workers || '-')}명 / ${escapeHtml(r.hours || '-')}h</div>
+          <div><span class="k">오염도</span>${escapeHtml(r.dirt || '-')} · 방치 ${escapeHtml(r.neglect || '-')}개월</div>
+          <div><span class="k">유리/엘베/주차</span>${escapeHtml(r.glass)} · ${escapeHtml(r.elevator)} · ${escapeHtml(r.parking)}</div>
+          <div><span class="k">최초 견적</span><span class="money">${fmtMoney(r.quote)}원</span></div>
+          <div><span class="k">최종 청구</span><span class="money">${fmtMoney(r.final)}원</span></div>
+          <div><span class="k">견적-실제 차이</span>${diffHtml}</div>
+          <div><span class="k">순이익</span><span class="money">${profitHtml}</span></div>
+          <div><span class="k">만족도/재계약</span>${escapeHtml(r.satisfaction || '-')}</div>
+        </div>
+        ${r.special ? `<div class="record-note"><strong>특이사항</strong><br/>${escapeHtml(r.special)}</div>` : ''}
+        ${r.memo ? `<div class="record-note"><strong>참고 메모</strong><br/>${escapeHtml(r.memo)}</div>` : ''}
+        <div class="record-actions">
+          <button class="btn-ghost" onclick="editRecord('${r.id}')">수정</button>
+          <button class="btn-primary" onclick="copyForSchedule('${r.id}')" style="background:var(--amber);">📋 일정 생성용 복사</button>
+          <button class="btn-primary" onclick="generateQuoteDoc('${r.id}')">🧾 견적서 보기/인쇄</button>
+          <button class="btn-danger" onclick="deleteRecord('${r.id}')">삭제</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addSampleRecord(){
+  const sample = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    date: new Date().toISOString().slice(0,10),
+    site: '역삼동 A사무실',
+    type: '사무실',
+    area: '45',
+    floors: '3',
+    height: '2.6',
+    workers: '3',
+    hours: '8',
+    dirt: '4',
+    neglect: '6',
+    glass: '있음',
+    elevator: '있음',
+    parking: '가능',
+    special: '곰팡이 약간, 창틀 오염 심함',
+    quote: 350000,
+    final: 420000,
+    cost: 300000,
+    satisfaction: '만족, 재계약 의향 있음',
+    memo: '다음엔 유리 별도 견적 필요',
+  };
+  records.push(sample);
+  await persist();
+  renderList();
+  showToast('샘플 데이터를 추가했어요 (테스트용)');
+}
+
+async function copyForSchedule(id){
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+
+  const lines = [
+    `[클린메니저 일정 생성용 정보]`,
+    `현장명: ${r.site || '-'}`,
+    `유형: ${r.type || '-'}`,
+    `평수: ${r.area || '-'}평 / 층수: ${r.floors || '-'}층 / 층고: ${r.height || '-'}m`,
+    `투입인원: ${r.workers || '-'}명 / 예상소요시간: ${r.hours || '-'}시간`,
+    `오염도: ${r.dirt || '-'} / 방치기간: ${r.neglect || '-'}개월`,
+    `유리/필름: ${r.glass || '-'} / 엘리베이터: ${r.elevator || '-'} / 주차: ${r.parking || '-'}`,
+    r.special ? `특이사항: ${r.special}` : null,
+    `최초견적: ${fmtMoney(r.quote)}원 / 최종청구: ${fmtMoney(r.final)}원`,
+    r.satisfaction ? `고객만족도/재계약: ${r.satisfaction}` : null,
+    r.memo ? `참고메모: ${r.memo}` : null,
+    ``,
+    `※ 아래는 일정 등록 시 채워주세요`,
+    `담당팀: `,
+    `작업 날짜/시간: `,
+    `고객명: `,
+    `연락처: `,
+    `주소: `,
+  ].filter(x => x !== null).join('\n');
+
+  openCopyModal(lines);
+}
+
+function openCopyModal(text){
+  const overlay = document.getElementById('copyModalOverlay');
+  const textarea = document.getElementById('copyModalText');
+  textarea.value = text;
+  overlay.style.display = 'flex';
+  // 자동으로 선택해둬서 바로 길게눌러 복사도 가능하게
+  setTimeout(() => { textarea.focus(); textarea.select(); }, 50);
+  // 모달이 뜨자마자 한 번 자동으로 복사 시도 (성공하면 사용자는 버튼 안 눌러도 됨)
+  attemptCopy(text, true);
+}
+
+function closeCopyModal(){
+  document.getElementById('copyModalOverlay').style.display = 'none';
+}
+
+function copyModalContent(){
+  const textarea = document.getElementById('copyModalText');
+  textarea.focus();
+  textarea.select();
+  attemptCopy(textarea.value, false);
+}
+
+async function attemptCopy(text, silent){
+  let ok = false;
+  // 1) 최신 클립보드 API 시도 (https 등 보안 컨텍스트에서만 동작)
+  try{
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    }
+  }catch(e){ ok = false; }
+
+  // 2) 구형 방식 시도 (file://, content:// 등 비보안 컨텍스트에서도 종종 동작)
+  if (!ok){
+    try{
+      const textarea = document.getElementById('copyModalText');
+      textarea.focus();
+      textarea.select();
+      ok = document.execCommand('copy');
+    }catch(e){ ok = false; }
+  }
+
+  if (ok){
+    showToast('클립보드에 복사됐어요!');
+  } else if (!silent){
+    showToast('자동 복사가 안 돼요. 텍스트를 길게 눌러 직접 선택 후 복사해주세요');
+  }
+  return ok;
+}
+
+function generateQuoteDoc(id){
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+
+  const today = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' });
+  const quoteDate = r.date || today;
+  const quoteNo = 'CL-' + (r.date ? r.date.replace(/-/g,'') : today.replace(/\D/g,'')) + '-' + id.slice(-4).toUpperCase();
+
+  const specRows = [
+    ['건물 유형', r.type || '-'],
+    ['면적', `${r.area || '-'}평`],
+    ['층수 / 층고', `${r.floors || '-'}층 / ${r.height || '-'}m`],
+    ['투입 인원 / 예상 소요시간', `${r.workers || '-'}명 / ${r.hours || '-'}시간`],
+    ['유리·필름 / 엘리베이터 / 주차', `${r.glass || '-'} / ${r.elevator || '-'} / ${r.parking || '-'}`],
+  ];
+  if (r.special) specRows.push(['현장 특이사항', r.special]);
+
+  const specRowsHtml = specRows.map(([k,v]) => `
+    <tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>
+  `).join('');
+
+  const quoteAmount = fmtMoney(r.quote);
+
+  const html = `<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8" />
+<title>견적서 - ${escapeHtml(r.site || '크리너리')}</title>
+<style>
+  @page { margin: 22mm 18mm; }
+  *{box-sizing:border-box;}
+  body{
+    font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+    color:#10241f;
+    max-width:760px;
+    margin:0 auto;
+    padding:40px 30px;
+    background:#fff;
+  }
+  .top{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:3px solid #0a4a40;
+    padding-bottom:14px;
+    margin-bottom:24px;
+  }
+  .brand{font-size:1.4rem; font-weight:800; color:#0a4a40; letter-spacing:1px;}
+  .brand small{display:block; font-size:0.7rem; font-weight:500; color:#5b6d67; letter-spacing:2px; margin-bottom:2px;}
+  .doc-title{font-size:1.6rem; font-weight:700; text-align:right;}
+  .meta{font-size:0.8rem; color:#5b6d67; text-align:right; margin-top:4px;}
+  h2.section{
+    font-size:0.95rem;
+    color:#0a4a40;
+    border-left:4px solid #0f6b5c;
+    padding-left:8px;
+    margin:26px 0 10px;
+  }
+  table{width:100%; border-collapse:collapse; font-size:0.87rem;}
+  th, td{border:1px solid #d7e2dd; padding:9px 12px; text-align:left;}
+  th{background:#f0f6f4; width:34%; color:#274943; font-weight:600;}
+  .amount-box{
+    margin-top:22px;
+    background:#0a4a40;
+    color:#fff;
+    padding:18px 22px;
+    border-radius:8px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .amount-box .label{font-size:0.85rem; opacity:0.85;}
+  .amount-box .value{font-size:1.5rem; font-weight:800; font-family:'SF Mono',Consolas,monospace;}
+  .vat-note{font-size:0.72rem; opacity:0.8; margin-top:2px;}
+  .notice{
+    margin-top:22px;
+    font-size:0.78rem;
+    color:#5b6d67;
+    background:#f6f9f8;
+    border-left:3px solid #c17d2e;
+    padding:12px 14px;
+    border-radius:0 6px 6px 0;
+    line-height:1.6;
+  }
+  .footer{
+    margin-top:36px;
+    text-align:center;
+    font-size:0.78rem;
+    color:#8a9d96;
+    border-top:1px solid #d7e2dd;
+    padding-top:14px;
+  }
+  .print-bar{
+    max-width:760px; margin:0 auto 14px; text-align:right;
+  }
+  .print-bar button{
+    font-family:inherit; font-size:0.85rem; font-weight:600;
+    padding:9px 18px; border-radius:7px; border:none;
+    background:#0f6b5c; color:#fff; cursor:pointer; margin-left:8px;
+  }
+  @media print{
+    .print-bar{display:none;}
+    body{padding:0;}
+  }
+</style>
+</head>
+<body>
+  <div class="print-bar">
+    <button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+    <button onclick="window.close()" style="background:#5b6d67;">닫기</button>
+  </div>
+
+  <div class="top">
+    <div class="brand"><small>CLEANERY</small>크리너리</div>
+    <div>
+      <div class="doc-title">견 적 서</div>
+      <div class="meta">견적번호 ${quoteNo}<br/>견적일자 ${quoteDate}</div>
+    </div>
+  </div>
+
+  <h2 class="section">현장 정보</h2>
+  <table>
+    <tr><th>현장명</th><td>${escapeHtml(r.site || '-')}</td></tr>
+    ${specRowsHtml}
+  </table>
+
+  <h2 class="section">견적 금액</h2>
+  <div class="amount-box">
+    <div>
+      <div class="label">청소 견적금액</div>
+      <div class="vat-note">VAT 별도</div>
+    </div>
+    <div class="value">${quoteAmount}원</div>
+  </div>
+
+  <div class="notice">
+    참고로 거주 여부를 미리 알려주지 않으신 경우, 오염도가 예상보다 심한 경우, 신고하신 면적보다 실제 면적이 더 큰 경우, 엘리베이터 없음, 현장 주차요금 발생 등 현장 상황에 따라 최종 금액이 변동될 수 있습니다. 정확한 최종 금액은 현장 확인 후 안내드립니다.<br/>
+    본 견적서의 유효기간은 발행일로부터 7일입니다.
+  </div>
+
+  <div class="footer">
+    크리너리 · 서울·경기 지역 청소 전문 서비스<br/>
+    본 견적서 관련 문의는 카카오톡 채널 '크리너리'로 연락 부탁드립니다.
+  </div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win){
+    showToast('팝업이 차단됐어요. 팝업 허용 후 다시 시도해주세요');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+}
+
+function escapeHtml(str){
+  if (str === undefined || str === null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// init
+document.getElementById('f_date').valueAsDate = new Date();
+loadRecords();
+</script>
+
+</body>
+</html>

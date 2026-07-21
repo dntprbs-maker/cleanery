@@ -1,0 +1,6 @@
+{
+  "name": "cleanery-kakao-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "크리너리 카카오톡 채널 상담봇 - Claude(via OpenRouter) 연동 스킬 서버"
+}
