@@ -114,7 +114,9 @@ details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
         '<div class="row"><select class="f-status"><option value="">상태 유지 (' + esc(r.status) + ')</option>' +
           next.map(function(s){ return '<option value="' + esc(s) + '">→ ' + esc(s) + '</option>'; }).join('') + '</select></div>' +
         '<textarea class="f-memo" placeholder="관리자 메모">' + esc(r.adminMemo || '') + '</textarea>' +
-        '<div class="row"><button type="button" class="save">저장</button><span class="msg"></span></div>' +
+        '<div class="row"><button type="button" class="save">저장</button>' +
+          (r.status === '예약확정' || r.status === '방문일정확정' ? '<button type="button" class="save copy" style="background:#b45309">📋 일정 생성용 복사</button>' : '') +
+          '<span class="msg"></span></div>' +
         '<details class="hist"><summary>처리 기록 ' + (r.history || []).length + '건</summary><ul>' +
           (r.history || []).slice().reverse().map(function(h){ return '<li>' + when(h.at) + ' · ' + esc(h.by) + ' · ' + esc(h.action) + '</li>'; }).join('') + '</ul></details>' +
       '</div></article>';
@@ -126,6 +128,16 @@ details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
   document.getElementById('list').addEventListener('click', function(e){
     if (!e.target.classList.contains('save')) return;
     var el = e.target.closest('.card'), id = el.getAttribute('data-id');
+    if (e.target.classList.contains('copy')) {
+      var m0 = el.querySelector('.msg');
+      fetch('/api/reservations?schedule=1&id=' + encodeURIComponent(id)).then(function(r){ return r.json(); }).then(function(d){
+        if (!d.ok) { m0.className = 'msg err'; m0.textContent = d.error; return; }
+        var done = function(){ m0.className = 'msg ok'; m0.textContent = '복사했습니다. 클린메니저 일정 등록에 붙여넣으세요.'; };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.text).then(done, function(){ window.prompt('아래 내용을 복사하세요', d.text); });
+        else window.prompt('아래 내용을 복사하세요', d.text);
+      });
+      return;
+    }
     var r = data.reservations.filter(function(x){ return x.id === id; })[0];
     var msg = el.querySelector('.msg'); msg.className = 'msg'; msg.textContent = '저장 중…';
     var body = { version: r.version || 1, paymentVerified: el.querySelector('.f-paid').checked, fields: { adminMemo: el.querySelector('.f-memo').value } };

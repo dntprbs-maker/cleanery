@@ -268,3 +268,19 @@ test('예약 관리: 실제 입금 확인 없이 예약확정 불가, 허용 안
   const stale = await reservations.adminUpdate(r.id, { fields: { adminMemo: 'x' }, version: 1 }, 'admin');
   assert.equal(stale.status, 409, '오래된 화면에서 저장하면 충돌 안내');
 });
+
+test('클린메니저 연동 인터페이스: 확정 예약만 create_event 형식으로 변환, 수동 복사 유지', async () => {
+  const bridge = require('../lib/cleanmanager-bridge');
+  const r = await reservations.upsertFromChat({ channel: 'kakao', userId: 'cm1', data: { customerName: '(시험) 최테스트', phone: '010-0000-0009', address: '(시험) 서울 은평구 예시로 3, 201호', desiredDate: '2026-10-10', cleaningType: '입주청소', quoteAmount: 230000 }, kind: '예약' });
+  assert.throws(() => bridge.toCleanManagerEvent(r), /예약확정/);
+  const ok = (await reservations.adminUpdate(r.id, { paymentVerified: true, status: '예약확정' }, 'admin')).record;
+  const ev = bridge.toCleanManagerEvent(ok);
+  assert.equal(ev.start, '2026-10-10');
+  assert.equal(ev.allDay, true);
+  assert.equal(ev.contact, '010-0000-0009');
+  assert.match(ev.title, /^\[입주청소\] \(시험\) 최테스트/);
+  for (const k of Object.keys(ev)) assert.ok(['title', 'start', 'end', 'allDay', 'startTime', 'endTime', 'place', 'contact', 'description', 'team'].includes(k), k);
+  const copy = await bridge.ManualCopySink.send(ok);
+  assert.match(copy.text, /2026-10-10\(토\)/);
+  assert.equal((await bridge.CleanManagerApiSink.send(ok)).ok, false, '자동 연동은 아직 비활성');
+});

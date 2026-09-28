@@ -26,7 +26,13 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const ur = (req.body && req.body.userRequest) || {};
+  if (!req.body || !req.body.userRequest) {
+    // 오픈빌더 형식이 아닌 요청: AI 를 부르지 않고 형식 오류만 알림
+    const { checkSkillRequest } = require('../lib/kakao-config');
+    res.status(400).json({ ok: false, error: '카카오 i 오픈빌더 스킬 요청 형식이 아닙니다.', problems: checkSkillRequest(req.body).problems });
+    return;
+  }
+  const ur = req.body.userRequest;
   const utterance = ur.utterance || '';
   const userId = (ur.user && ur.user.id) || null;
   const callbackUrl = ur.callbackUrl || null;

@@ -2,3 +2,5 @@ node_modules/
 .vercel
 .env
 .env.local
+.dev-store.json
+.dev-store.json.tmp

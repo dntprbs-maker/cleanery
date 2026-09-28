@@ -13,6 +13,18 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
 
   try {
+    if (req.method === 'GET' && req.query && req.query.schedule && req.query.id) {
+      // 클린메니저 일정 생성용 정보(현재는 수동 복사 방식)
+      const rec = await reservations.get(String(req.query.id));
+      if (!rec) { res.status(404).json({ ok: false, error: '예약을 찾을 수 없습니다.' }); return; }
+      try {
+        const out = await require('../lib/cleanmanager-bridge').currentSink().send(rec);
+        res.status(out.ok ? 200 : 501).json(out);
+      } catch (e) {
+        res.status(400).json({ ok: false, error: e.message });
+      }
+      return;
+    }
     if (req.method === 'GET') {
       const list = await reservations.list();
       const notes = ((await store.cmd('LRANGE', 'cleanery:admin:notifications', '0', '29')) || []).map((j) => JSON.parse(j));

@@ -1,6 +1,13 @@
 {
   "name": "cleanery-kakao-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "크리너리 카카오톡 채널 상담봇 - Claude(via OpenRouter) 연동 스킬 서버"
+  "description": "크리너리 카카오톡 채널 상담봇·홈페이지·관리자 - Claude(via OpenRouter) 연동",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "dev": "node scripts/dev-server.js",
+    "hash-password": "node scripts/hash-password.js --secret",
+    "check-kakao": "node scripts/check-kakao-config.js"
+  },
+  "engines": { "node": ">=20" }
 }
