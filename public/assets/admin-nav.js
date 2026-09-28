@@ -25,7 +25,7 @@
     var nav = document.createElement('nav');
     nav.id = 'cln-admin-nav';
     nav.setAttribute('aria-label', '관리자 메뉴');
-    var links = [['/admin/reservations', '예약 목록'], ['/admin/conversations', '상담내역'], ['/admin/tracker', '견적 프로그램']];
+    var links = [['/admin/reservations', '예약 목록'], ['/admin/conversations', '상담내역'], ['/admin/tracker', '견적 프로그램'], ['/admin/review', '상담 검토']];
     links.forEach(function (l) {
       var a = document.createElement('a');
       a.href = l[0];

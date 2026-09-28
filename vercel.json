@@ -1,7 +1,7 @@
 {
   "outputDirectory": "public",
   "functions": {
-    "api/app.js": { "includeFiles": "{admin-pages,handlers}/**" }
+    "api/app.js": { "includeFiles": "{admin-pages,handlers,review}/**" }
   },
   "redirects": [
     { "source": "/tracker.html", "destination": "/admin/tracker", "permanent": false },
@@ -10,8 +10,8 @@
   ],
   "rewrites": [
     { "source": "/admin/login", "destination": "/admin/login.html" },
-    { "source": "/admin/:page(tracker|conversations|reservations)", "destination": "/api/app?__route=admin-page&page=:page" },
-    { "source": "/api/:route(tracker|conversations|admin|reservations|web-chat)", "destination": "/api/app?__route=:route" }
+    { "source": "/admin/:page(tracker|conversations|reservations|review)", "destination": "/api/app?__route=admin-page&page=:page" },
+    { "source": "/api/:route(tracker|conversations|admin|reservations|web-chat|review)", "destination": "/api/app?__route=:route" }
   ],
   "headers": [
     {

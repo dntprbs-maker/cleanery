@@ -12,6 +12,7 @@ const ROUTES = {
   'admin-page': () => require('../handlers/admin-page'),
   reservations: () => require('../handlers/reservations'),
   'web-chat': () => require('../handlers/web-chat'),
+  review: () => require('../handlers/review'),
 };
 
 module.exports = async (req, res) => {

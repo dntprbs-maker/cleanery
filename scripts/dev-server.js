@@ -27,7 +27,7 @@ process.env.CLEANERY_NOTIFY = 'log';
 process.env.CLEANERY_DEV_STORE_FILE = process.env.CLEANERY_DEV_STORE_FILE || path.join(ROOT, '.dev-store.json');
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
-const APP_ROUTES = ['tracker', 'conversations', 'admin', 'reservations', 'web-chat'];
+const APP_ROUTES = ['tracker', 'conversations', 'admin', 'reservations', 'web-chat', 'review'];
 
 function vercelRes(res) {
   res.status = (c) => { res.statusCode = c; return res; };
@@ -64,7 +64,7 @@ const server = http.createServer(async (req, res) => {
     const redirects = { '/tracker.html': '/admin/tracker', '/conversations.html': '/admin/conversations', '/admin': '/admin/reservations' };
     if (redirects[p]) { res.statusCode = 307; res.setHeader('Location', redirects[p]); return res.end(); }
     if (p === '/admin/login') p = '/admin/login.html';
-    let m = p.match(/^\/admin\/(tracker|conversations|reservations)$/);
+    let m = p.match(/^\/admin\/(tracker|conversations|reservations|review)$/);
     if (m) return runFunction('api/app.js', req, res, { ...query, __route: 'admin-page', page: m[1] });
     m = p.match(/^\/api\/([a-z-]+)$/);
     if (m && APP_ROUTES.includes(m[1])) return runFunction('api/app.js', req, res, { ...query, __route: m[1] });

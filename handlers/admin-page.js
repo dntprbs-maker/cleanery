@@ -9,6 +9,7 @@ const PAGES = {
   tracker: 'tracker.html',
   conversations: 'conversations.html',
   reservations: 'reservations.html',
+  review: 'review.html',
 };
 
 module.exports = async (req, res) => {
