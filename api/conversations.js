@@ -27,6 +27,11 @@ async function upstash(pathSegments) {
 }
 
 module.exports = async (req, res) => {
+  // [긴급 보안 패치] 로그인 기능이 들어가기 전까지 고객 대화 내역(이름·연락처·주소) 외부 조회를 막습니다.
+  // 되돌리기: 이 두 줄을 지우면 이전 동작으로 돌아갑니다.
+  res.status(403).json({ error: "상담내역 조회는 보안 점검으로 잠시 막혀 있습니다.", sessions: [], messages: [] });
+  return;
+
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'method not allowed' });
     return;

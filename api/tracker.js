@@ -55,6 +55,9 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'POST') {
+    // [긴급 보안 패치] 로그인 없이 전체 기록을 덮어쓸 수 있어 저장을 막습니다(조회는 유지). 되돌리기: 아래 두 줄 삭제.
+    res.status(403).json({ ok: false, error: "저장은 보안 점검으로 잠시 막혀 있습니다." });
+    return;
     try {
       const records = (req.body && req.body.records) || [];
       const value = JSON.stringify(records);
