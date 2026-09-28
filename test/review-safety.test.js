@@ -197,6 +197,24 @@ test('기준 후보: 고치지 않은 "검토 포인트" 답변은 제외하고 
   assert.equal(s.appliedToBot, false);
 });
 
+test('아빠가 고친 뒤 사례 원본 문장이 바뀌면 "원본이 바뀐 수정"으로 표시', async () => {
+  const review = require('../lib/review');
+  const cookie = await loginCookie();
+  const tid = await staffTurn(cookie, 'C010');
+  await save(cookie, 'C010', { version: 0, edits: { [tid]: '아빠 수정' } });
+  let t = (await getCase(cookie, 'C010')).body.turns.find((x) => x.id === tid);
+  assert.equal(t.originChanged, false);
+  const turn = review.getCase('C010').turns.find((x) => x.id === tid);
+  const before = turn.text;
+  turn.text = '나중에 바뀐 원본 문장';
+  try {
+    t = (await getCase(cookie, 'C010')).body.turns.find((x) => x.id === tid);
+    assert.equal(t.originChanged, true);
+    assert.equal(t.editedFrom, before);
+    assert.equal(t.final, '아빠 수정', '아빠 수정은 그대로 보존');
+  } finally { turn.text = before; }
+});
+
 test('이전 버전 복원도 재실행 후 유지', async () => {
   const cookie = await loginCookie();
   const tid = await staffTurn(cookie, 'C009');

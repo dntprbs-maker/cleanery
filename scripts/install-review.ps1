@@ -14,7 +14,16 @@ foreach ($d in 'api', 'handlers', 'lib', 'admin-pages', 'public', 'review', 'scr
 }
 Copy-Item (Join-Path $src 'package.json') $staging
 # 바꿔치기: 새 폴더를 다 만든 뒤 교체 (도중 실패해도 기존 app 은 그대로)
-if (Test-Path $app) { Rename-Item $app -NewName ('app-old-' + (Get-Date -Format 'yyyyMMddHHmmss')) }
+# 실행 중인 검토 프로그램(이 app 폴더에서 돈 node·cmd 창)을 먼저 닫습니다 — 저장한 내용은 파일에 있으므로 안전
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and (($_.Name -eq 'node.exe' -and $_.CommandLine -match '--review-local') -or ($_.Name -eq 'cmd.exe' -and ($_.CommandLine.Contains($app) -or $_.CommandLine -match 'start-review\.bat'))) } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Milliseconds 500
+Get-ChildItem $TargetHome -Directory | Where-Object { $_.Name -like 'app-new-*' -and $_.FullName -ne $staging } | ForEach-Object { Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+if (Test-Path $app) {
+  $old = 'app-old-' + (Get-Date -Format 'yyyyMMddHHmmss')
+  for ($i = 0; $i -lt 10; $i++) {
+    try { Rename-Item $app -NewName $old -ErrorAction Stop; break } catch { Start-Sleep -Milliseconds 700; if ($i -eq 9) { throw "검토 프로그램 창이 열려 있어 업데이트하지 못했습니다. 검토 프로그램 창을 닫고 다시 실행해 주세요." } }
+  }
+}
 Rename-Item $staging -NewName 'app'
 Get-ChildItem $TargetHome -Directory | Where-Object { $_.Name -like 'app-old-*' } | Sort-Object Name -Descending | Select-Object -Skip 2 | ForEach-Object { Remove-Item $_.FullName -Recurse -Force }
 $sh = New-Object -ComObject WScript.Shell

@@ -105,6 +105,7 @@ details.tools summary{cursor:pointer;font-weight:700;color:var(--navy);min-heigh
       <select id="fCat" aria-label="분류"><option value="">전체 분류</option></select>
       <select id="fChannel" aria-label="상담 유형"><option value="">전화·문자 전체</option><option>전화</option><option>문자</option></select>
       <select id="fDiff" aria-label="난이도"><option value="">난이도 전체</option><option>하</option><option>중</option><option>상</option></select>
+      <select id="fIssue" class="full" aria-label="검토 포인트"><option value="">검토 포인트 전체</option><option value="has">⚠ 검토 포인트 있는 사례만</option><option value="none">검토 포인트 없는 사례만</option></select>
     </div>
     <details class="tools">
       <summary>내려받기 · 백업 · 가져오기 · 상담 기준 후보</summary>
@@ -214,8 +215,10 @@ details.tools summary{cursor:pointer;font-weight:700;color:var(--navy);min-heigh
   }
 
   function filtered(){
-    var q = $('q').value.trim().toLowerCase(), cat = $('fCat').value, ch = $('fChannel').value, df = $('fDiff').value;
+    var q = $('q').value.trim().toLowerCase(), cat = $('fCat').value, ch = $('fChannel').value, df = $('fDiff').value, fi = $('fIssue').value;
     return items.filter(function(i){
+      if (fi === 'has' && !i.issues) return false;
+      if (fi === 'none' && i.issues) return false;
       if (chip && i.status !== chip) return false;
       if (cat && i.category !== cat) return false;
       if (ch && i.channel !== ch) return false;
@@ -297,6 +300,7 @@ details.tools summary{cursor:pointer;font-weight:700;color:var(--navy);min-heigh
       (t.edited ? '<span class="orig">' + esc(t.original) + '</span><span class="edited-mark">아빠 수정본</span> ' : '') +
       '<span class="text">' + esc(t.final) + '</span>' +
       (t.note ? '<span class="note">수정 이유: ' + esc(t.note) + '</span>' : '') +
+      (t.originChanged ? '<span class="issue">⚠ 이 답변을 고친 뒤 사례 원본 문장이 바뀌었습니다. 고칠 당시 원본: ' + esc(t.editedFrom) + '</span>' : '') +
       (staff && t.issue ? '<span class="issue">⚠ 검토 포인트: ' + esc(t.issue) + (t.why ? ' — ' + esc(t.why) : '') + '</span>' : '') +
       (staff ? '<br><button type="button" class="edit-btn" data-tid="' + t.id + '">✎ 답변 고치기</button>' : '');
     return '<div class="turn ' + t.speaker + (staff && t.issue ? ' has-issue' : '') + '" data-tid="' + t.id + '">' + inner + '</div>';
@@ -390,7 +394,7 @@ details.tools summary{cursor:pointer;font-weight:700;color:var(--navy);min-heigh
   $('backBtn').addEventListener('click', function(){ if (dirty && !confirm('저장하지 않은 수정이 있습니다. 목록으로 갈까요? (이 기기에 임시 보관됩니다)')) return; saveDraft(); dirty = false; history.pushState({}, '', location.pathname); showList(); });
   window.addEventListener('popstate', function(){ var id = location.hash.slice(1); if (id) openCase(id, false); else showList(); });
   window.addEventListener('beforeunload', function(e){ saveDraft(); if (dirty) { e.preventDefault(); e.returnValue = ''; } });
-  ['q', 'fCat', 'fChannel', 'fDiff'].forEach(function(id){ $(id).addEventListener('input', renderList); $(id).addEventListener('change', renderList); });
+  ['q', 'fCat', 'fChannel', 'fDiff', 'fIssue'].forEach(function(id){ $(id).addEventListener('input', renderList); $(id).addEventListener('change', renderList); });
   $('chips').addEventListener('click', function(e){ var b = e.target.closest('[data-chip]'); if (!b) return; chip = b.getAttribute('data-chip'); document.querySelectorAll('.chip').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); renderList(); });
   $('list').addEventListener('click', function(e){ var b = e.target.closest('.item'); if (b) openCase(b.getAttribute('data-id')); });
 
