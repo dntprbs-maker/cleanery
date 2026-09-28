@@ -20,7 +20,7 @@ function respond(res, text) {
   res.status(200).json({ version: '2.0', template: { outputs: buildOutputs(text) } });
 }
 
-module.exports = async (req, res) => {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(200).json({ ok: true, message: '크리너리 카카오 챗봇 스킬 서버가 정상 동작 중입니다.' });
     return;
@@ -50,6 +50,21 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // 카카오 재전송 등으로 같은 사용자의 같은 말이 처리 중에 또 오면 AI 를 두 번 부르지 않음(중복 답변·중복 기록 방지)
+  if (userId) {
+    const store = require('../lib/store');
+    const lockKey = `cleanery:kakao:inflight:${userId}`;
+    const got = await store.cmd('SET', lockKey, utterance.slice(0, 200), 'NX', 'EX', 30).catch(() => 'OK');
+    if (!got) {
+      const busyWith = await store.cmd('GET', lockKey).catch(() => null);
+      if (busyWith === utterance.slice(0, 200)) {
+        console.log('[kakao-skill] duplicate request ignored | userId:', userId);
+        res.status(200).json({ version: '2.0', template: { outputs: [{ simpleText: { text: '앞선 메시지에 답변을 준비하고 있어요. 잠시만 기다려 주세요.' } }] } });
+        return;
+      }
+    }
+    req.__inflightKey = lockKey;
+  }
   const prep = await consult.prepare({ channel: 'kakao', userId, utterance });
   if (prep.mode === 'silent') {
     console.log('[kakao-skill] session already terminated, staying silent | userId:', userId);
@@ -106,5 +121,13 @@ module.exports = async (req, res) => {
     console.log('[kakao-skill] callback POST status:', cbRes.status);
   } catch (e) {
     console.error('[kakao-skill] callback POST failed:', e.message);
+  }
+};
+
+module.exports = async (req, res) => {
+  try {
+    await handler(req, res);
+  } finally {
+    if (req.__inflightKey) await require('../lib/store').cmd('DEL', req.__inflightKey).catch(() => {});
   }
 };

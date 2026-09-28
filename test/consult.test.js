@@ -341,3 +341,22 @@ test('[실AI 결함] 아파트인데 방·화장실 개수를 계속 물으면 �
   const out = await CHANNELS.web('apt32', '아파트 신축 32평이요');
   assert.match(out[0], /32평 아파트 기준 약 320,000원\(VAT별도\)/);
 });
+
+test('홈페이지 채팅: 새로고침 후 이전 대화 복원(내부 표시 제거)', async () => {
+  script = ['면적이 어떻게 되세요?\n[[관리자알림: 테스트]]'];
+  await CHANNELS.web('hist1', '빌라 청소요');
+  const r = await call(webChat, { method: 'POST', body: { sessionId: 'sess-user-hist1', history: true } });
+  assert.deepEqual(r.body.history.map((m) => m.role), ['me', 'bot']);
+  assert.doesNotMatch(JSON.stringify(r.body.history), /관리자알림/);
+});
+
+test('카카오: 같은 사용자의 같은 말이 처리 중에 다시 오면 AI 를 두 번 부르지 않음, 끝나면 잠금 해제', async () => {
+  script = [() => new Promise((res) => setTimeout(() => res('면적이 어떻게 되세요?'), 300)), '두 번째 답'];
+  const body = { userRequest: { utterance: '아파트요', user: { id: 'dup-k1' } } };
+  const [a, b] = await Promise.all([call(kakao, { method: 'POST', body }), call(kakao, { method: 'POST', body })]);
+  const texts = [a, b].map((r) => r.body.template.outputs[0].simpleText.text).sort();
+  assert.deepEqual(texts, ['면적이 어떻게 되세요?', '앞선 메시지에 답변을 준비하고 있어요. 잠시만 기다려 주세요.'].sort());
+  assert.equal(seenPrompts.length, 1, 'AI 호출 1회');
+  const c = await call(kakao, { method: 'POST', body });
+  assert.equal(c.body.template.outputs[0].simpleText.text, '두 번째 답', '처리 끝난 뒤에는 정상 처리');
+});

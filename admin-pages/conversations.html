@@ -296,7 +296,7 @@ function showList(){
   document.getElementById('listView').style.display = 'block';
 }
 
-loadList();
+loadList().then(function(){ var id = new URLSearchParams(location.search).get('id'); if (id) openDetail(id); });
 </script>
 
 </body>

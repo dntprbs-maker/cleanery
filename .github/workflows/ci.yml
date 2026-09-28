@@ -1,0 +1,34 @@
+name: CI
+on:
+  push:
+    branches: ['**']
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check (all JS)
+        run: |
+          find api handlers lib scripts test public/assets -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: JSON validity (vercel.json, review cases)
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('vercel.json','utf8'))"
+          for f in review/cases/*.json; do node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"; done
+      - name: Static checks (no secrets in repo, public folder only has public files)
+        run: |
+          ! grep -rEn "sk-or-v1-[A-Za-z0-9]{20,}|KV_REST_API_TOKEN=[A-Za-z0-9]" --include='*.js' --include='*.json' --include='*.md' --include='*.html' . || (echo 'secret-like value found' && exit 1)
+          test -z "$(find public -name '*.md' -o -name 'business-info.js' -o -name '.env*')"
+      - name: Unit/integration tests (in-memory store, fake AI, no network)
+        run: npm test
+      - name: Build check (dev server boots and serves key routes)
+        run: |
+          node scripts/dev-server.js --port 3999 &
+          sleep 2
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3999/)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3999/admin/login)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3999/api/review?action=list)" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3999/lib/business-info.js)" = 404

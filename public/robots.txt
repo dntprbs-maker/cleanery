@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /admin
+Disallow: /api/
+Allow: /
+# 사이트맵 주소는 공식 도메인 확정 후 추가(정책 확인 필요)

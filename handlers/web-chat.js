@@ -47,6 +47,17 @@ module.exports = async (req, res) => {
     return;
   }
 
+  if (body.history) {
+    // 새로고침 후 화면 복원용: 고객에게 보였던 말만(내부 표시 제거)
+    const cur = await sessions.getSession(consult.sessionIdFor('web', sessionId));
+    const messages = (cur.messages || []).map((m) => ({
+      role: m.role === 'assistant' ? 'bot' : 'me',
+      text: String(m.content || '').replace(/\[\[[^\]]*\]\]/g, '').trim(),
+    })).filter((m) => m.text);
+    res.status(200).json({ ok: true, history: messages.flatMap((m) => (m.role === 'bot' ? consult.toBubbles(m.text).map((t) => ({ role: 'bot', text: t })) : [m])) });
+    return;
+  }
+
   if (body.reset) {
     const sid = consult.sessionIdFor('web', sessionId);
     const cur = await sessions.getSession(sid);

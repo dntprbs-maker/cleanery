@@ -143,3 +143,13 @@ test('저장소 진단(store-probe)은 데모 모드에서만 열림', async () 
   const r = await call(admin, { query: { action: 'store-probe' } });
   assert.equal(r.statusCode, 404);
 });
+
+test('예약: 같은 연락처·같은 날짜 중복은 표시만(삭제·병합 없음), 확정일은 희망일과 따로 저장', async () => {
+  const a = await reservations.upsertFromChat({ channel: 'kakao', userId: 'k-dup1', data: { phone: '010-0000-7777', desiredDate: '2026-10-20', quoteAmount: 250000 }, kind: '예약' });
+  const b = await reservations.upsertFromChat({ channel: 'web', userId: 'w-dup1', data: { phone: '01000007777', desiredDate: '2026-10-20', quoteAmount: 250000 }, kind: '예약' });
+  assert.equal(b.duplicateOf, a.id);
+  assert.equal((await reservations.list()).length, 2, '둘 다 보존');
+  const up = await reservations.adminUpdate(a.id, { fields: { confirmedDate: '2026-10-21' } }, 'admin');
+  assert.equal(up.record.desiredDate, '2026-10-20');
+  assert.equal(up.record.confirmedDate, '2026-10-21');
+});

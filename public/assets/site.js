@@ -79,7 +79,15 @@
     lastFocus = document.activeElement;
     chat.hidden = false;
     document.documentElement.style.overflow = window.innerWidth < 900 ? 'hidden' : '';
-    if (!started) { started = true; greet(); }
+    if (!started) {
+      started = true;
+      post({ sessionId: getId(), history: true }).then(function (d) {
+        if (d.ok && d.history && d.history.length) {
+          bubble('이전 상담 내용을 불러왔어요.', 'sys');
+          d.history.forEach(function (m) { bubble(m.text, m.role === 'bot' ? 'bot' : 'me'); });
+        } else greet();
+      }).catch(greet);
+    }
     setTimeout(function () { input.focus(); }, 50);
   }
   function closeChat() {
@@ -105,12 +113,29 @@
     }).then(function (r) { return r.json(); });
   }
 
+  function retryBubble(text) {
+    var d = document.createElement('div');
+    d.className = 'msg sys';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = '↻ 다시 보내기';
+    b.style.cssText = 'border:1px solid #cfd8e3;background:#fff;border-radius:10px;min-height:40px;padding:0 14px;font:inherit;cursor:pointer';
+    b.onclick = function () { d.remove(); send(text, true); };
+    d.appendChild(b);
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var text = input.value.trim();
     if (!text) return;
-    bubble(text, 'me');
     input.value = '';
+    send(text, false);
+  });
+
+  function send(text, isRetry) {
+    if (!isRetry) bubble(text, 'me');
     busy(true);
     var wait = bubble('답변 작성 중…', 'sys');
     post({ sessionId: getId(), message: text }).then(function (d) {
@@ -120,15 +145,17 @@
         if (d.hint) bubble(d.hint, 'sys');
       } else {
         bubble(d.error || '잠시 후 다시 시도해 주세요.', 'sys');
+        retryBubble(text);
       }
     }).catch(function () {
       wait.remove();
-      bubble('잠시 후 다시 시도해 주세요.', 'sys');
+      bubble('연결이 불안정해요. 잠시 후 다시 보내 주세요.', 'sys');
+      retryBubble(text);
     }).then(function () {
       busy(false);
       input.focus();
     });
-  });
+  }
 
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {

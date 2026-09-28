@@ -32,7 +32,7 @@ dt{color:var(--muted)} dd{margin:0;word-break:break-all}
 .pay.claim{background:var(--redbg)} .pay.ok{background:var(--greenbg)} .pay.none{background:#f3f4f6}
 .edit{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;display:grid;gap:8px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-select,textarea,input[type=text]{font:inherit;border:1px solid #cfd8e3;border-radius:10px;padding:8px 10px;min-height:44px;width:100%}
+select,textarea,input[type=text],input[type=search],input[type=date]{font:inherit;border:1px solid #cfd8e3;border-radius:10px;padding:8px 10px;min-height:44px;width:100%}
 textarea{min-height:64px}
 label.chk{display:flex;gap:8px;align-items:center;font-weight:600;min-height:44px}
 label.chk input{width:22px;height:22px}
@@ -52,6 +52,11 @@ details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
   <h1>예약 관리</h1>
   <p class="sub">고객이 "입금했다"고 알린 것(입금확인요청)과 실제 계좌 입금 확인은 다릅니다. 실제 입금을 확인해 체크한 뒤에만 예약확정할 수 있습니다.</p>
   <div class="tabs" id="tabs"></div>
+  <div class="filters" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <input id="fq" type="search" placeholder="고객명·전화번호 검색" aria-label="고객명·전화번호 검색" style="grid-column:1/-1">
+    <label style="font-size:13px;color:var(--muted)">날짜부터<input id="fFrom" type="date"></label>
+    <label style="font-size:13px;color:var(--muted)">날짜까지<input id="fTo" type="date"></label>
+  </div>
   <div class="grid" id="list"><div class="empty">불러오는 중…</div></div>
   <section class="notes"><h2>관리자 알림함 <span id="mode" class="id"></span></h2><div id="notes"></div></section>
 </main>
@@ -79,8 +84,14 @@ details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
     document.getElementById('tabs').innerHTML = tabs.map(function(t){
       return '<button type="button" data-t="' + t + '" class="' + (t === filter ? 'on' : '') + '">' + t + ' ' + (counts[t]||0) + '</button>';
     }).join('');
+    var q = (document.getElementById('fq').value || '').trim(), qd = q.replace(/\D/g, ''), from = document.getElementById('fFrom').value, to = document.getElementById('fTo').value;
     var rows = data.reservations.filter(function(r){
-      return filter === '전체' ? true : filter === '진행중' ? ACTIVE.indexOf(r.status) >= 0 : r.status === filter;
+      if (!(filter === '전체' ? true : filter === '진행중' ? ACTIVE.indexOf(r.status) >= 0 : r.status === filter)) return false;
+      if (q && String(r.customerName || '').indexOf(q) < 0 && !(qd.length >= 3 && String(r.phone || '').replace(/\D/g, '').indexOf(qd) >= 0)) return false;
+      var d = String(r.confirmedDate || r.desiredDate || r.visitAt || '').slice(0, 10);
+      if (from && (!d || d < from)) return false;
+      if (to && (!d || d > to)) return false;
+      return true;
     });
     document.getElementById('list').innerHTML = rows.length ? rows.map(card).join('') : '<div class="empty">해당하는 예약이 없습니다.</div>';
     document.getElementById('mode').textContent = '· ' + (data.notifyMode || '');
@@ -102,17 +113,20 @@ details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
       '<dl>' +
         '<dt>연락처</dt><dd>' + (r.phone ? '<a href="tel:' + esc(r.phone) + '">' + esc(r.phone) + '</a>' : '-') + '</dd>' +
         '<dt>주소</dt><dd>' + esc(r.address || '-') + '</dd>' +
-        (r.visitAt ? '<dt>방문 희망</dt><dd>' + dateW(r.visitAt) + '</dd>' : '<dt>청소 희망일</dt><dd>' + dateW(r.desiredDate) + '</dd>') +
+        (r.visitAt ? '<dt>방문 희망</dt><dd>' + dateW(r.visitAt) + '</dd>' : '<dt>고객 희망일</dt><dd>' + dateW(r.desiredDate) + '</dd>') +
+        '<dt>확정일</dt><dd>' + (r.confirmedDate ? dateW(r.confirmedDate) : '<span style="color:var(--muted)">미정(관리자 입력)</span>') + '</dd>' +
         '<dt>청소</dt><dd>' + esc([r.cleaningType, r.buildingType, r.areaPyeong ? r.areaPyeong + '평' : ''].filter(Boolean).join(' · ') || '-') + '</dd>' +
         '<dt>견적</dt><dd class="money">' + won(r.quoteAmount) + (r.quoteAmount ? ' (VAT별도)' : '') + '</dd>' +
         '<dt>계약금</dt><dd class="money">' + won(r.deposit) + '</dd>' +
         '<dt>잔금</dt><dd class="money">' + won(r.balance) + '</dd>' +
         (r.notes ? '<dt>특이사항</dt><dd>' + esc(r.notes) + '</dd>' : '') +
-      '</dl>' + pay +
+      '</dl>' + (r.duplicateOf ? '<div class="pay claim">⚠ 중복 의심: 같은 연락처·날짜의 예약 ' + esc(r.duplicateOf) + ' 가 있습니다</div>' : '') + pay +
+      '<p style="margin:6px 0"><a href="/admin/conversations?id=' + encodeURIComponent(r.channel === 'web' ? 'web:' + r.userId : r.userId) + '">💬 이 고객 상담 내역 보기</a></p>' +
       '<div class="edit">' +
         '<label class="chk"><input type="checkbox" class="f-paid"' + (r.paymentVerified ? ' checked' : '') + '> 실제 계좌 입금을 확인했습니다</label>' +
         '<div class="row"><select class="f-status"><option value="">상태 유지 (' + esc(r.status) + ')</option>' +
           next.map(function(s){ return '<option value="' + esc(s) + '">→ ' + esc(s) + '</option>'; }).join('') + '</select></div>' +
+        '<label style="font-size:14px">확정일 <input type="date" class="f-confirmed" value="' + esc(r.confirmedDate || '') + '"></label>' +
         '<textarea class="f-memo" placeholder="관리자 메모">' + esc(r.adminMemo || '') + '</textarea>' +
         '<div class="row"><button type="button" class="save">저장</button>' +
           (r.status === '예약확정' || r.status === '방문일정확정' ? '<button type="button" class="save copy" style="background:#b45309">📋 일정 생성용 복사</button>' : '') +
@@ -122,6 +136,7 @@ details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
       '</div></article>';
   }
 
+  ['fq', 'fFrom', 'fTo'].forEach(function(id){ document.getElementById(id).addEventListener('input', render); });
   document.getElementById('tabs').addEventListener('click', function(e){
     var t = e.target.getAttribute('data-t'); if (!t) return; filter = t; render();
   });
@@ -140,7 +155,7 @@ details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
     }
     var r = data.reservations.filter(function(x){ return x.id === id; })[0];
     var msg = el.querySelector('.msg'); msg.className = 'msg'; msg.textContent = '저장 중…';
-    var body = { version: r.version || 1, paymentVerified: el.querySelector('.f-paid').checked, fields: { adminMemo: el.querySelector('.f-memo').value } };
+    var body = { version: r.version || 1, paymentVerified: el.querySelector('.f-paid').checked, fields: { adminMemo: el.querySelector('.f-memo').value, confirmedDate: el.querySelector('.f-confirmed').value || null } };
     var st = el.querySelector('.f-status').value; if (st) body.status = st;
     fetch('/api/reservations?id=' + encodeURIComponent(id), { method: 'PATCH', headers: { 'Content-Type':'application/json', 'X-Cleanery-Admin':'1' }, body: JSON.stringify(body) })
       .then(function(res){ return res.json().then(function(d){ return { res: res, d: d }; }); })
