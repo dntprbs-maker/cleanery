@@ -284,3 +284,60 @@ test('클린메니저 연동 인터페이스: 확정 예약만 create_event 형�
   assert.match(copy.text, /2026-10-10\(토\)/);
   assert.equal((await bridge.CleanManagerApiSink.send(ok)).ok, false, '자동 연동은 아직 비활성');
 });
+
+// ---- 실제 AI 시험(2차)에서 발견된 결함 재현 ----
+test('[실AI 결함] AI 가 예약정보 마커를 빠뜨려도 예약 안내 템플릿에서 예약이 기록되고, 입금 주장 시 입금확인요청', async () => {
+  const noMarker = TEMPLATE('10월 17일(토)').replace(/\n\[\[예약정보:[\s\S]*$/, '');
+  script = ['예상 견적은 약 230,000원(VAT별도)입니다.', noMarker, '입금 알려주셔서 감사합니다.\n[[관리자알림: 입금자명 확인 필요 - 홍길동]]'];
+  await CHANNELS.web('nomark', '빌라 58제곱 신축 방2 화장실1');
+  await CHANNELS.web('nomark', '홍길동 010-1234-5678 서울 마포구 망원로 10, 301호 10월 17일 예약할게요');
+  let rs = await reservations.list();
+  assert.equal(rs.length, 1);
+  assert.equal(rs[0].customerName, '홍길동');
+  assert.equal(rs[0].quoteAmount, 230000);
+  assert.equal(rs[0].deposit, 50000);
+  assert.equal(rs[0].balance, 180000);
+  assert.match(rs[0].desiredDate, /^\d{4}-10-17$/);
+  assert.equal(rs[0].status, '입금대기');
+  await CHANNELS.web('nomark', '입금했어요 홍길동');
+  rs = await reservations.list();
+  assert.equal(rs[0].status, '입금확인요청');
+  assert.equal(rs[0].paymentVerified, false);
+});
+
+test('[실AI 결함] 방문견적 알림만 있고 마커가 없어도 방문견적 예약 기록', async () => {
+  script = ['방문 일정 잡아 둘게요.\n[[관리자알림: 팀장 연락 필요 - 상가·사무실·공장 견적, 연락처 010-4444-5555, 방문희망일시 10월 15일 오후 2시]]'];
+  await CHANNELS.kakao('visit2', '사무실 청소 10월 15일 오후 2시 방문, 가상구 오피스로 5 3층, 010-4444-5555');
+  const rs = await reservations.list();
+  assert.equal(rs.length, 1);
+  assert.equal(rs[0].status, '방문견적요청');
+  assert.equal(rs[0].phone, '010-4444-5555');
+  assert.match(rs[0].visitAt, /10월 15일 오후 2시/);
+});
+
+test('[실AI 결함] 고객이 이미 말한 정보(건물·신축·면적, 고친 값 우선)를 AI 에게 전달', async () => {
+  script = ['면적 확인했습니다.', '32평 기준으로 다시 계산할게요.'];
+  await CHANNELS.web('facts', '아파트 신축 25평이요');
+  await CHANNELS.web('facts', '아 잘못 말했어요 32평이에요');
+  const sys = seenPrompts[1].filter((m) => m.role === 'system').map((m) => m.content).join('\n');
+  assert.match(sys, /이미 알려준 정보: 건물 아파트 \/ 상태 신축\(입주 전\) \/ 면적 32평/);
+});
+
+test('[실AI 결함] 주거용 기본 견적을 서버가 계산해 AI 에게 전달(환산 누락 방지)', () => {
+  const q = (building, area) => rules.computeQuote({ building, area });
+  assert.equal(q('단독주택', '30평').base, 585000, '30÷0.76≈39평×15,000');
+  assert.equal(q('빌라', '25평').base, 330000, '25÷0.76≈33평×10,000');
+  assert.equal(q('빌라', '58㎡').base, 230000, '58㎡→17.5평÷0.76≈23평');
+  assert.equal(q('상가주택', '23평').base, 360000, '23÷0.76≈30평×12,000');
+  assert.equal(q('아파트', '34평').base, 340000, '아파트는 그대로');
+  assert.equal(q('아파트', '84타입').base, 340000, '환산표');
+  assert.equal(q('사무실', '30평'), null, '상가·사무실은 계산 안 함');
+  const hints = rules.stateHints(rules.conversationState([{ role: 'user', content: '단독주택 신축 등기 30평' }]));
+  assert.match(hints, /기본 585,000원\(VAT별도\)/);
+});
+
+test('[실AI 결함] 아파트인데 방·화장실 개수를 계속 물으면 재작성 → 그래도 같으면 서버 계산 견적으로 답', async () => {
+  script = ['화장실이 몇 개인가요?', '화장실은 몇 개인가요?'];
+  const out = await CHANNELS.web('apt32', '아파트 신축 32평이요');
+  assert.match(out[0], /32평 아파트 기준 약 320,000원\(VAT별도\)/);
+});
