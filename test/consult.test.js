@@ -374,3 +374,40 @@ test('아파트: 견적을 말한 뒤에도 방·화장실 개수를 되묻으�
   const villa = rules.conversationState([{ role: 'user', content: '빌라 전용 20평이에요' }]);
   assert.equal(rules.detectViolation('방과 화장실은 몇 개인가요?', villa), null);
 });
+
+test('[실AI 결함 A4 재현] 날짜·주소·연락처를 한 번에 줬는데 AI 가 알림·마커를 모두 빠뜨려도 방문견적 기록+알림 1건', async () => {
+  script = [
+    '사무실은 인원 기준이라 현장 확인이 필요해요. 오염 정도는 어떤가요?',
+    '약 350,000원부터 시작하고 정확한 금액은 현장 확인 후 결정됩니다. 희망하시는 방문 날짜와 시간이 어떻게 되세요?',
+    '10월 15일(목) 오후 2시 방문으로 예약하겠습니다. 혹시 사무실 이름이나 건물명이 있으면 알려주시겠어요?',
+    '네 확인했습니다.',
+  ];
+  await CHANNELS.kakao('a4', '사무실 청소 견적이요 30평');
+  await CHANNELS.kakao('a4', '오염은 보통이고 엘리베이터 있어요');
+  await CHANNELS.kakao('a4', '10월 15일 오후 2시 방문 가능해요. 가상시 가상구 오피스로 5, 3층, 010-0000-9004');
+  let rs = await reservations.list();
+  assert.equal(rs.length, 1);
+  assert.equal(rs[0].status, '방문견적요청');
+  assert.equal(rs[0].phone, '010-0000-9004');
+  let notes = await notifications();
+  assert.equal(notes.filter((n) => /010-0000-9004/.test(n.reason)).length, 1);
+  // 다음 턴에 또 알리지 않음(중복 방지)
+  await CHANNELS.kakao('a4', '건물명은 가상타워예요');
+  notes = await notifications();
+  assert.equal(notes.filter((n) => /010-0000-9004/.test(n.reason)).length, 1);
+  assert.equal((await reservations.list()).length, 1);
+});
+
+test('[실AI 결함 B05 재현] 서버 계산과 다른 견적 금액(빌라 환산 누락)은 규칙 위반', () => {
+  const rules = require('../lib/consult-rules');
+  const state = rules.conversationState([{ role: 'user', content: '빌라 신축 전용 25평, 방3 화장실3이에요' }]);
+  const wrong = '기본 견적은 25평 × 10,000원 = 250,000원에, 화장실 초과분(+50,000원)을 더해서 **약 300,000원(VAT별도)**입니다.';
+  assert.match(String(rules.detectViolation(wrong, state)), /견적 금액/);
+  const right = '전용 25평은 공급 약 33평으로 330,000원이고, 화장실 초과 50,000원을 더해 약 380,000원(VAT별도)입니다.';
+  assert.equal(rules.detectViolation(right, state), null);
+  const baseOnly = '약 330,000원(VAT별도)부터입니다.';
+  assert.equal(rules.detectViolation(baseOnly, state), null);
+  // 사무실 등 확정 견적을 안 내는 경우는 대상 아님
+  const office = rules.conversationState([{ role: 'user', content: '사무실 청소 30평이요' }]);
+  assert.equal(rules.detectViolation('약 350,000원부터 시작합니다. 정확한 금액은 현장 확인 후 결정됩니다.', office), null);
+});
