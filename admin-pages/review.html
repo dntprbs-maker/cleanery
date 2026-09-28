@@ -9,111 +9,153 @@
 <style>
 :root{--navy:#0f2a4a;--teal:#14a3a3;--bg:#f4f7fa;--card:#fff;--text:#16202c;--muted:#5b6b7c;--line:#e1e7ee;--blue:#1d4ed8;--amber:#b45309;--red:#b42318;--green:#15803d}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
-main{max-width:980px;margin:0 auto;padding:12px 12px 90px}
-h1{font-size:20px;margin:4px 0 8px;color:var(--navy)}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.65 system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+main{max-width:860px;margin:0 auto;padding:12px 12px 120px}
+h1{font-size:20px;margin:4px 0 8px;color:var(--navy);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h1 .sp{flex:1}
 .banner{border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:10px;background:#e0f2f1}
 .banner.warn{background:#fef3c7;color:#7c2d12}
+.banner.bad{background:#fee4e2;color:#7a271a;font-weight:700}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
 .stat{background:#fff;border-radius:10px;padding:8px;text-align:center;font-size:13px;color:var(--muted)}
 .stat b{display:block;font-size:20px;color:var(--text)}
-.progress{height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;margin:4px 0 12px}
+.progress{height:12px;background:#e5e7eb;border-radius:6px;overflow:hidden;margin:4px 0 4px}
 .progress i{display:block;height:100%;background:var(--teal)}
+.progress-label{font-size:14px;color:var(--muted);margin-bottom:10px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch}
+.chip{flex:none;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #cfd8e3;background:#fff;font:inherit;font-size:15px;cursor:pointer;color:var(--text)}
+.chip[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
 .filters{display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-bottom:10px}
-.filters input,.filters select{font:inherit;min-height:44px;border:1px solid #cfd8e3;border-radius:10px;padding:0 10px;width:100%}
+.filters input,.filters select{font:inherit;font-size:16px;min-height:46px;border:1px solid #cfd8e3;border-radius:10px;padding:0 10px;width:100%;background:#fff}
 .filters .full{grid-column:1/-1}
-label.chk{display:flex;align-items:center;gap:8px;min-height:44px;font-size:15px}
-label.chk input{width:20px;height:20px}
-.tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.tools a,.tools button,.btn{display:inline-flex;align-items:center;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid #cfd8e3;background:#fff;color:var(--navy);font:inherit;font-size:14px;text-decoration:none;cursor:pointer}
+details.tools{background:#fff;border-radius:12px;padding:8px 12px;margin-bottom:12px}
+details.tools summary{cursor:pointer;font-weight:700;color:var(--navy);min-height:36px;display:flex;align-items:center}
+.toolrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.toolrow a,.toolrow button,.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #cfd8e3;background:#fff;color:var(--navy);font:inherit;font-size:15px;text-decoration:none;cursor:pointer}
 .btn.primary{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:700}
-.list .item{display:block;width:100%;text-align:left;background:#fff;border:0;border-radius:12px;padding:12px;margin-bottom:8px;font:inherit;cursor:pointer;box-shadow:0 1px 4px rgba(15,42,74,.06)}
-.item .top{display:flex;justify-content:space-between;gap:8px}
+.btn:disabled{opacity:.45;cursor:default}
+.list .item{display:block;width:100%;text-align:left;background:#fff;border:0;border-radius:12px;padding:12px 14px;margin-bottom:8px;font:inherit;cursor:pointer;box-shadow:0 1px 4px rgba(15,42,74,.06);color:var(--text)}
+.item .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .item .title{font-weight:700}
-.meta{font-size:13px;color:var(--muted)}
-.badge{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700;white-space:nowrap}
+.meta{font-size:14px;color:var(--muted)}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700;white-space:nowrap}
 .s-미검토{background:#eef1f4;color:#4b5563}.s-수정\ 중{background:#dbeafe;color:var(--blue)}.s-검토\ 완료{background:#dcfce7;color:var(--green)}
 .s-보류{background:#fef3c7;color:var(--amber)}.s-기준\ 반영\ 완료{background:#ede9fe;color:#6d28d9}
+.flag{color:var(--red);font-weight:700}
 #detail[hidden],#listView[hidden]{display:none}
-.back{margin-bottom:10px}
-.case-head{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px}
-.case-head h2{font-size:18px;margin:0 0 4px}
-.situation{font-size:14px;margin:6px 0 0}
-.chat{display:flex;flex-direction:column;gap:8px;margin:10px 0}
-.turn{max-width:88%;border-radius:14px;padding:9px 12px;white-space:pre-wrap;word-break:break-word;position:relative}
-.turn.customer{background:#fff;border:1px solid var(--line);align-self:flex-start}
-.turn.staff{background:#e3f2ff;align-self:flex-end}
-.script .turn{max-width:100%;align-self:stretch;border-radius:8px}
-.script .turn .who{font-weight:700;margin-right:6px}
-.who{font-size:12px;color:var(--muted);display:block}
-.turn .orig{color:#9aa5b1;text-decoration:line-through;font-size:14px;display:block;margin-bottom:4px}
-.turn .edited-mark{color:var(--blue);font-size:12px;font-weight:700}
-.turn .note{display:block;color:var(--amber);font-size:13px;margin-top:4px}
-.turn .edit-btn{margin-top:6px;border:0;background:transparent;color:var(--blue);font:inherit;font-size:14px;padding:4px 0;cursor:pointer;min-height:32px}
-.turn textarea,.case-note{width:100%;font:inherit;border:1px solid #9ec5ff;border-radius:8px;padding:8px;min-height:90px}
-.turn input.reason{width:100%;font:inherit;font-size:14px;border:1px solid #cfd8e3;border-radius:8px;padding:6px 8px;margin-top:6px;min-height:40px}
-.box{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px}
-.box h3{font-size:15px;margin:0 0 6px}
-.box ul{margin:0;padding-left:18px;font-size:14px}
+.navrow{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.navrow .pos{flex:1;text-align:center;font-size:15px;color:var(--muted)}
+.case-head{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px}
+.case-head h2{font-size:19px;margin:0 0 4px;line-height:1.4}
+.situation{margin:8px 0 0}
+.persona{margin:4px 0 0;font-size:15px;color:var(--muted)}
+.legend{font-size:14px;color:var(--muted);margin:6px 0 2px}
+.chat{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.turn{max-width:90%;border-radius:16px;padding:10px 14px;white-space:pre-wrap;word-break:break-word;position:relative}
+.turn.customer{background:#fff;border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.turn.staff{background:#e3f2ff;align-self:flex-end;border:2px dashed #93c5fd;border-bottom-right-radius:4px}
+.turn.staff.editing{border-style:solid;border-color:var(--blue);background:#fff;max-width:100%;align-self:stretch}
+.turn.staff.has-issue{border-color:#f97066}
+.script{background:#fff;border-radius:12px;padding:6px 12px}
+.script .turn{max-width:100%;align-self:stretch;border-radius:0;background:transparent;border:0;border-bottom:1px solid var(--line);padding:10px 2px}
+.script .turn.staff{border:0;border-bottom:1px solid var(--line);border-left:4px solid #93c5fd;padding-left:10px}
+.script .turn.staff.has-issue{border-left-color:#f97066}
+.script .turn.staff.editing{border:2px solid var(--blue);border-radius:10px;padding:10px}
+.who{font-size:13px;color:var(--muted);display:block;font-weight:700}
+.script .who{display:inline;margin-right:6px;color:var(--navy)}
+.script .turn.customer .who{color:#6b4e16}
+.tsn{font-size:12px;color:#9aa5b1;font-weight:400;margin-left:4px}
+.turn .orig{color:#8a96a3;text-decoration:line-through;font-size:15px;display:block;margin-bottom:4px}
+.turn .edited-mark{color:var(--blue);font-size:13px;font-weight:700}
+.turn .note{display:block;color:var(--amber);font-size:14px;margin-top:4px}
+.issue{display:block;background:#fef3f2;color:#912018;border-radius:8px;padding:6px 8px;font-size:14px;margin-top:6px;white-space:normal}
+.edit-btn{margin-top:6px;border:1px solid #93c5fd;background:#fff;color:var(--blue);font:inherit;font-size:14px;padding:0 12px;cursor:pointer;min-height:40px;border-radius:999px;font-weight:700}
+.turn textarea,.case-note{width:100%;font:inherit;font-size:17px;border:1px solid #9ec5ff;border-radius:8px;padding:10px;min-height:120px;background:#fff}
+.turn input.reason{width:100%;font:inherit;font-size:15px;border:1px solid #cfd8e3;border-radius:8px;padding:6px 10px;margin-top:6px;min-height:44px}
+.box{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.box h3{font-size:16px;margin:0 0 6px}
+.box ul{margin:0;padding-left:18px;font-size:15px}
 .policy li{color:var(--red)}
-.savebar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center;z-index:40}
+.diff li{margin-bottom:8px}
+.diff .o{color:#8a96a3;text-decoration:line-through}
+.diff .n{color:var(--blue);font-weight:600}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:center;z-index:40;box-shadow:0 -4px 12px rgba(15,42,74,.08)}
 .savebar[hidden]{display:none}
-.savebar select{font:inherit;min-height:46px;border:1px solid #cfd8e3;border-radius:10px;padding:0 8px;flex:1}
-.savebar .btn.primary{min-height:46px;padding:0 20px}
-.msg{font-size:13px;min-height:18px}
-.msg.err{color:var(--red)}.msg.ok{color:var(--green)}
+.savebar select{font:inherit;font-size:16px;min-height:46px;border:1px solid #cfd8e3;border-radius:10px;padding:0 6px;min-width:0}
+.savebar .btn{min-height:46px;padding:0 12px}
+.msgline{grid-column:1/-1;font-size:14px;min-height:0}
+.msgline:empty{display:none}
+.msg.err{color:var(--red)}.msg.ok{color:var(--green)}.msg.info{color:var(--muted)}
 .hist li{margin-bottom:6px}
-@media(min-width:760px){.stats{grid-template-columns:repeat(6,1fr)}.filters{grid-template-columns:2fr 1fr 1fr 1fr}.filters .full{grid-column:auto}.savebar{left:50%;transform:translateX(-50%);max-width:980px;border-radius:12px 12px 0 0}}
+.hidden{display:none!important}
+@media(min-width:760px){.stats{grid-template-columns:repeat(6,1fr)}.filters{grid-template-columns:2fr 1fr 1fr 1fr}.filters .full{grid-column:auto}.savebar{left:50%;transform:translateX(-50%);max-width:860px;border-radius:12px 12px 0 0}}
 </style>
 </head>
 <body>
 <main>
-  <h1>가상 상담 검토</h1>
+  <h1><span>가상 상담 검토</span><span class="sp"></span><button class="btn hidden" type="button" id="quitBtn">프로그램 종료</button></h1>
   <div id="storage" class="banner"></div>
   <section id="listView">
     <div class="stats" id="stats"></div>
-    <div class="progress" aria-label="검토 진행률"><i id="bar" style="width:0"></i></div>
+    <div class="progress" aria-hidden="true"><i id="bar" style="width:0"></i></div>
+    <div class="progress-label" id="progressLabel"></div>
+    <div class="chips" id="chips" role="group" aria-label="검토 상태로 보기"></div>
     <div class="filters">
-      <input id="q" type="search" placeholder="번호·제목·내용 검색" aria-label="검색">
+      <input id="q" type="search" placeholder="번호·제목·대화 내용 검색" aria-label="검색">
       <select id="fCat" aria-label="분류"><option value="">전체 분류</option></select>
-      <select id="fStatus" aria-label="검토 상태"><option value="">전체 상태</option></select>
-      <label class="chk full"><input type="checkbox" id="onlyTodo"> 미검토만 보기</label>
+      <select id="fChannel" aria-label="상담 유형"><option value="">전화·문자 전체</option><option>전화</option><option>문자</option></select>
+      <select id="fDiff" aria-label="난이도"><option value="">난이도 전체</option><option>하</option><option>중</option><option>상</option></select>
     </div>
-    <div class="tools">
-      <a href="/api/review?action=export&format=docx">DOCX 전체</a>
-      <a href="/api/review?action=export&format=csv">CSV 전체</a>
-      <a href="/api/review?action=export&format=json">JSON 전체(백업)</a>
-      <a href="/api/review?action=export&format=docx&only=approved">검토 완료만 DOCX</a>
-      <a href="/api/review?action=export&format=csv&only=approved">검토 완료만 CSV</a>
-      <a href="/api/review?action=standards&format=docx">상담 기준 후보(DOCX)</a>
-      <a href="/api/review?action=standards&format=md">상담 기준 후보(MD)</a>
-      <label class="btn" for="importFile">JSON 가져오기</label><input id="importFile" type="file" accept=".json,application/json" hidden>
-    </div>
+    <details class="tools">
+      <summary>내려받기 · 백업 · 가져오기 · 상담 기준 후보</summary>
+      <div class="toolrow">
+        <a href="/api/review?action=export&format=json">JSON 전체 백업 내려받기</a>
+        <label class="btn" for="importFile">백업 JSON 가져오기</label><input id="importFile" type="file" accept=".json,application/json" hidden>
+        <button type="button" id="backupNow" class="hidden">지금 백업 만들기</button>
+      </div>
+      <div class="toolrow">
+        <a href="/api/review?action=export&format=docx">Word 전체</a>
+        <a href="/api/review?action=export&format=csv">엑셀(CSV) 전체</a>
+        <a href="/api/review?action=export&format=docx&only=approved">검토 완료만 Word</a>
+        <a href="/api/review?action=standards&format=docx">상담 기준 후보(Word)</a>
+        <a href="/api/review?action=standards&format=md">상담 기준 후보(글)</a>
+      </div>
+      <div id="backupList" class="meta"></div>
+    </details>
     <p class="meta" id="count"></p>
     <div class="list" id="list"></div>
   </section>
 
   <section id="detail" hidden>
-    <button class="btn back" type="button" id="backBtn">← 목록으로</button>
+    <div class="navrow">
+      <button class="btn" type="button" id="backBtn">← 목록</button>
+      <span class="pos" id="pos"></span>
+      <button class="btn" type="button" id="prevBtn" aria-label="이전 상담">◀ 이전</button>
+      <button class="btn" type="button" id="nextBtn" aria-label="다음 상담">다음 ▶</button>
+    </div>
     <div class="case-head" id="caseHead"></div>
+    <p class="legend" id="legend"></p>
     <div id="convo"></div>
+    <div class="box" id="diffBox"><h3>원본 ↔ 아빠 수정 비교</h3><ul class="diff" id="diff"></ul></div>
     <div class="box"><h3>상담 결과</h3><div id="outcome"></div></div>
     <div class="box"><h3>주의할 점</h3><ul id="cautions"></ul></div>
-    <div class="box policy" id="policyBox"><h3>정책 확인 필요</h3><ul id="policy"></ul></div>
-    <div class="box"><h3>아빠 메모(사례 전체)</h3><textarea class="case-note" id="caseNote" placeholder="이 사례에 대한 메모"></textarea></div>
+    <div class="box policy" id="policyBox"><h3>정책 확인 필요 (회사 기준이 아직 없음)</h3><ul id="policy"></ul></div>
+    <div class="box"><h3>아빠 메모 (사례 전체)</h3><textarea class="case-note" id="caseNote" placeholder="이 사례 전체에 대한 생각을 적어 두세요"></textarea></div>
     <div class="box"><h3>이전 버전</h3><ul class="hist" id="hist"></ul></div>
   </section>
 </main>
 
 <div class="savebar" id="savebar" hidden>
+  <button class="btn" type="button" id="prev2" aria-label="이전 상담">◀</button>
   <select id="status" aria-label="검토 상태"></select>
   <button class="btn primary" type="button" id="saveBtn">저장</button>
+  <button class="btn" type="button" id="saveNext">저장 후 다음 ▶</button>
+  <div class="msgline msg" id="msg" role="status"></div>
 </div>
-<div class="savebar" id="msgbar" hidden style="bottom:70px;border:0;background:transparent;padding:0 12px"><span class="msg" id="msg"></span></div>
 
 <script>
 (function(){
-  var items = [], statuses = [], current = null, dirty = false;
+  var items = [], statuses = [], current = null, dirty = false, view = [], storage = {}, chip = '';
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function when(s){ return s ? new Date(s).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; }
@@ -123,38 +165,76 @@ label.chk input{width:20px;height:20px}
     opt.headers = Object.assign({ 'Content-Type': 'application/json', 'X-Cleanery-Admin': '1' }, opt.headers || {});
     return fetch(url, opt).then(function(r){ return r.json().then(function(d){ d.__status = r.status; return d; }); });
   }
-  function msg(t, kind){ $('msgbar').hidden = !t; $('msg').className = 'msg ' + (kind || ''); $('msg').textContent = t || ''; }
+  function msg(t, kind){ $('msg').className = 'msgline msg ' + (kind || ''); $('msg').textContent = t || ''; }
+
+  // ---- 저장 안 된 수정 임시 보관(이 기기 브라우저). 창이 닫히거나 로그인이 끊겨도 다시 열면 되살림 ----
+  var DRAFT = 'cln-review-draft-';
+  function collect(){
+    var edits = {}, notes = {};
+    document.querySelectorAll('[data-edit]').forEach(function(t){ edits[t.getAttribute('data-edit')] = t.value; });
+    document.querySelectorAll('[data-note]').forEach(function(t){ notes[t.getAttribute('data-note')] = t.value; });
+    return { edits: edits, notes: notes, caseNote: $('caseNote').value, status: $('status').value };
+  }
+  function saveDraft(){
+    if (!current || !dirty) return;
+    try { localStorage.setItem(DRAFT + current.case.id, JSON.stringify({ base: current.state.version, at: Date.now(), data: collect() })); } catch (e) {}
+  }
+  function clearDraft(id){ try { localStorage.removeItem(DRAFT + id); } catch (e) {} }
+  function readDraft(id){ try { return JSON.parse(localStorage.getItem(DRAFT + id) || 'null'); } catch (e) { return null; } }
+  setInterval(saveDraft, 3000);
+  document.addEventListener('input', function(){ if (current && !$('detail').hidden) { dirty = true; saveDraft(); } });
 
   function loadList(){
     return api('/api/review?action=list').then(function(d){
-      items = d.items; statuses = d.statuses;
-      var st = d.storage || {}; $('storage').textContent = st.message || ''; $('storage').className = 'banner' + (st.durable ? '' : ' warn');
-      var s = d.stats;
+      items = d.items; statuses = d.statuses; storage = d.storage || {};
+      $('storage').textContent = storage.message || '';
+      $('storage').className = 'banner' + (storage.readOnly ? ' bad' : storage.durable ? '' : ' warn');
+      $('quitBtn').classList.toggle('hidden', !storage.local);
+      $('backupNow').classList.toggle('hidden', !storage.backups);
+      if (storage.local) document.querySelectorAll('#cln-admin-nav a').forEach(function(a){ if (a.getAttribute('href') !== '/admin/review') a.classList.add('hidden'); });
+      var s = d.stats, done = s['검토 완료'] + s['기준 반영 완료'];
       $('stats').innerHTML = [['전체', s.total], ['미검토', s['미검토']], ['수정 중', s['수정 중']], ['검토 완료', s['검토 완료']], ['보류', s['보류']], ['기준 반영', s['기준 반영 완료']]]
         .map(function(x){ return '<div class="stat"><b>' + x[1] + '</b>' + x[0] + '</div>'; }).join('');
       $('bar').style.width = s.progressPercent + '%';
-      $('bar').parentNode.title = '검토 진행률 ' + s.progressPercent + '%';
+      $('progressLabel').textContent = '검토 진행률 ' + s.progressPercent + '% (검토 완료 ' + done + ' / ' + s.total + '건)';
       if ($('fCat').options.length === 1) {
         Array.from(new Set(items.map(function(i){ return i.category; }))).forEach(function(c){ $('fCat').add(new Option(c, c)); });
-        statuses.forEach(function(x){ $('fStatus').add(new Option(x, x)); $('status').add(new Option(x, x)); });
+        statuses.forEach(function(x){ $('status').add(new Option(x, x)); });
+        $('chips').innerHTML = [''].concat(statuses).map(function(x){ return '<button type="button" class="chip" data-chip="' + esc(x) + '" aria-pressed="' + (x === chip) + '">' + (x ? esc(x) + '만' : '전체') + '</button>'; }).join('');
       }
+      if (storage.backups) loadBackups();
       renderList();
     });
   }
+  function loadBackups(){
+    api('/api/review?action=backups').then(function(d){
+      if (!d.enabled) return;
+      $('backupList').innerHTML = '자동 백업(최근): ' + (d.items.slice(0, 5).map(function(b){ return '<a href="/api/review?action=backup-file&name=' + encodeURIComponent(b.name) + '">' + esc(b.kind) + ' ' + when(b.savedAt) + '</a>'; }).join(' · ') || '아직 없음(첫 저장 때 만들어집니다)');
+    });
+  }
 
-  function renderList(){
-    var q = $('q').value.trim().toLowerCase(), cat = $('fCat').value, st = $('fStatus').value, todo = $('onlyTodo').checked;
-    var rows = items.filter(function(i){
+  function filtered(){
+    var q = $('q').value.trim().toLowerCase(), cat = $('fCat').value, ch = $('fChannel').value, df = $('fDiff').value;
+    return items.filter(function(i){
+      if (chip && i.status !== chip) return false;
       if (cat && i.category !== cat) return false;
-      if (st && i.status !== st) return false;
-      if (todo && i.status !== '미검토') return false;
-      if (q && (String(i.no) + ' ' + i.title + ' ' + i.category).toLowerCase().indexOf(q) < 0 && ('#' + i.no) !== q) return false;
+      if (ch && i.channel !== ch) return false;
+      if (df && i.difficulty !== df) return false;
+      if (q) {
+        var num = q.replace(/^#/, '');
+        if (/^\d+$/.test(num)) return String(i.no) === String(Number(num));
+        if ((i.title + ' ' + i.category + ' ' + (i.search || '')).toLowerCase().indexOf(q) < 0) return false;
+      }
       return true;
     });
-    $('count').textContent = rows.length + '건 표시';
-    $('list').innerHTML = rows.map(function(i){
+  }
+  function renderList(){
+    view = filtered();
+    $('count').textContent = view.length + '건 표시' + (view.length !== items.length ? ' (전체 ' + items.length + '건 중)' : '');
+    $('list').innerHTML = view.map(function(i){
       return '<button class="item" type="button" data-id="' + i.id + '"><div class="top"><span class="title">' + String(i.no).padStart(3, '0') + '. ' + esc(i.title) + '</span><span class="badge s-' + esc(i.status) + '">' + esc(i.status) + '</span></div>' +
-        '<div class="meta">' + esc(i.category) + ' · ' + esc(i.channel) + ' · 난이도 ' + esc(i.difficulty) + (i.edited ? ' · 수정 ' + i.edited + '곳' : '') + (i.policy ? ' · 정책확인 ' + i.policy : '') + '</div></button>';
+        '<div class="meta">' + esc(i.channel) + ' 상담 · ' + esc(i.category) + ' · 난이도 ' + esc(i.difficulty) + ' · 대화 ' + i.turns + '줄' +
+        (i.issues ? ' · <span class="flag">검토 포인트 ' + i.issues + '</span>' : '') + (i.edited ? ' · 수정 ' + i.edited + '곳' : '') + (i.policy ? ' · 정책확인 ' + i.policy : '') + '</div></button>';
     }).join('') || '<p class="meta">조건에 맞는 사례가 없습니다.</p>';
   }
 
@@ -165,24 +245,42 @@ label.chk input{width:20px;height:20px}
       $('listView').hidden = true; $('detail').hidden = false; $('savebar').hidden = false; msg('');
       if (push !== false) history.pushState({ id: id }, '', '#' + id);
       renderCase();
+      var dr = readDraft(id);
+      if (dr && dr.data) {
+        if (dr.base === current.state.version) { applyDraft(dr.data); msg('저장하지 않았던 수정 내용을 되살렸습니다. [저장]을 눌러야 저장됩니다.', 'info'); }
+        else { clearDraft(id); }
+      }
       window.scrollTo(0, 0);
     });
   }
+  function applyDraft(data){
+    Object.keys(data.edits || {}).forEach(function(tid){ startEdit(tid); var ta = document.querySelector('[data-edit="' + tid + '"]'); if (ta) ta.value = data.edits[tid]; var n = document.querySelector('[data-note="' + tid + '"]'); if (n) n.value = (data.notes || {})[tid] || ''; });
+    $('caseNote').value = data.caseNote || ''; if (data.status) $('status').value = data.status;
+    dirty = true;
+  }
 
+  function position(){
+    var ids = (view.length ? view : items).map(function(i){ return i.id; });
+    var idx = ids.indexOf(current.case.id);
+    if (idx < 0) { ids = items.map(function(i){ return i.id; }); idx = ids.indexOf(current.case.id); }
+    return { ids: ids, idx: idx };
+  }
   function renderCase(){
-    var c = current.case, s = current.state;
-    $('caseHead').innerHTML = '<h2>' + String(c.no).padStart(3, '0') + '. ' + esc(c.title) + '</h2><div class="meta">' + esc(c.category) + ' · ' + esc(c.channel) + ' 상담 · 난이도 ' + esc(c.difficulty) + ' · 버전 ' + s.version + (s.updatedAt ? ' · 마지막 저장 ' + when(s.updatedAt) + ' (' + esc(s.updatedBy) + ')' : '') + '</div><p class="situation">' + esc(c.situation) + '</p>';
+    var c = current.case, s = current.state, p = position();
+    $('pos').textContent = (p.idx + 1) + ' / ' + p.ids.length + (p.ids.length !== items.length ? ' (걸러진 목록)' : '번째');
+    ['prevBtn', 'prev2'].forEach(function(b){ $(b).disabled = p.idx <= 0; });
+    ['nextBtn', 'saveNext'].forEach(function(b){ $(b).disabled = p.idx >= p.ids.length - 1; });
+    var issues = current.turns.filter(function(t){ return t.issue; }).length;
+    $('caseHead').innerHTML = '<h2>' + String(c.no).padStart(3, '0') + '. ' + esc(c.title) + '</h2><div class="meta">' + esc(c.channel) + ' 상담 · ' + esc(c.category) + ' · 난이도 ' + esc(c.difficulty) + ' · <span class="badge s-' + esc(s.status) + '">' + esc(s.status) + '</span> · 버전 ' + s.version + (s.updatedAt ? ' · 마지막 저장 ' + when(s.updatedAt) : '') + '</div>' +
+      '<p class="situation"><b>상황</b> ' + esc(c.situation) + '</p>' + (c.persona ? '<p class="persona">고객 특징: ' + esc(c.persona) + '</p>' : '') +
+      (issues ? '<p class="persona flag">⚠ 상담직원 답변 중 ' + issues + '곳에 "검토 포인트"가 표시돼 있습니다 — 일부러 넣은 현실적인 실수입니다.</p>' : '');
     var script = c.channel === '전화';
-    $('convo').className = 'chat' + (script ? ' script' : '');
-    $('convo').innerHTML = current.turns.map(function(t){
-      var who = t.speaker === 'staff' ? '상담직원' : '고객';
-      var inner = (script ? '<span class="who">' + who + '</span>' : '<span class="who">' + who + '</span>') +
-        (t.edited ? '<span class="orig">' + esc(t.original) + '</span><span class="edited-mark">수정본</span> ' : '') +
-        '<span class="text">' + esc(t.final) + '</span>' +
-        (t.note ? '<span class="note">수정 이유: ' + esc(t.note) + '</span>' : '') +
-        (t.speaker === 'staff' ? '<br><button type="button" class="edit-btn" data-tid="' + t.id + '">✎ 답변 수정</button>' : '');
-      return '<div class="turn ' + t.speaker + '" data-tid="' + t.id + '">' + inner + '</div>';
-    }).join('');
+    $('legend').textContent = script ? '📞 통화 녹취록 — 파란 선이 있는 줄이 상담직원 답변이며 [답변 고치기]로 수정할 수 있습니다.' : '💬 문자 대화 — 오른쪽 파란 점선 말풍선이 상담직원 답변이며 [답변 고치기]로 수정할 수 있습니다.';
+    $('convo').className = script ? 'chat script' : 'chat';
+    $('convo').innerHTML = current.turns.map(renderTurn).join('');
+    var changed = current.turns.filter(function(t){ return t.edited || t.note; });
+    $('diffBox').hidden = !changed.length;
+    $('diff').innerHTML = changed.map(function(t){ return '<li><div class="o">' + esc(t.original) + '</div><div class="n">→ ' + esc(t.final) + '</div>' + (t.note ? '<div class="meta">이유: ' + esc(t.note) + '</div>' : '') + '</li>'; }).join('');
     $('outcome').textContent = c.outcome;
     $('cautions').innerHTML = c.cautions.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('');
     $('policyBox').hidden = !c.policy.length;
@@ -190,59 +288,107 @@ label.chk input{width:20px;height:20px}
     $('caseNote').value = s.caseNote || '';
     $('status').value = s.status;
     $('hist').innerHTML = current.history.length ? current.history.map(function(h){
-      return '<li>버전 ' + h.version + ' · ' + esc(h.status) + ' · 수정 ' + h.edited + '곳 · ' + when(h.updatedAt) + ' (' + esc(h.updatedBy || '-') + ') <button class="btn" type="button" data-restore="' + h.version + '">이 버전으로 복원</button></li>';
+      return '<li>버전 ' + h.version + ' · ' + esc(h.status) + ' · 수정 ' + h.edited + '곳 · ' + when(h.updatedAt) + ' <button class="btn" type="button" data-restore="' + h.version + '">이 버전으로 되돌리기</button></li>';
     }).join('') : '<li class="meta">아직 이전 버전이 없습니다(두 번째 저장부터 쌓입니다).</li>';
   }
-
+  function renderTurn(t){
+    var staff = t.speaker === 'staff', who = staff ? '상담직원' : '고객';
+    var inner = '<span class="who">' + who + '<span class="tsn">' + t.id.slice(1) + '</span></span>' +
+      (t.edited ? '<span class="orig">' + esc(t.original) + '</span><span class="edited-mark">아빠 수정본</span> ' : '') +
+      '<span class="text">' + esc(t.final) + '</span>' +
+      (t.note ? '<span class="note">수정 이유: ' + esc(t.note) + '</span>' : '') +
+      (staff && t.issue ? '<span class="issue">⚠ 검토 포인트: ' + esc(t.issue) + (t.why ? ' — ' + esc(t.why) : '') + '</span>' : '') +
+      (staff ? '<br><button type="button" class="edit-btn" data-tid="' + t.id + '">✎ 답변 고치기</button>' : '');
+    return '<div class="turn ' + t.speaker + (staff && t.issue ? ' has-issue' : '') + '" data-tid="' + t.id + '">' + inner + '</div>';
+  }
+  function startEdit(tid){
+    var el = document.querySelector('.turn[data-tid="' + tid + '"]'); if (!el || el.classList.contains('editing')) return;
+    var t = current.turns.filter(function(x){ return x.id === tid; })[0];
+    el.classList.add('editing');
+    el.innerHTML = '<span class="who">상담직원 답변 고치는 중</span><span class="orig">원본: ' + esc(t.original) + '</span><textarea data-edit="' + tid + '" aria-label="고친 답변">' + esc(t.final) + '</textarea>' +
+      '<input class="reason" data-note="' + tid + '" placeholder="왜 고쳤는지(선택) — 예: 너무 딱딱함, 가격부터 말함" value="' + esc(t.note) + '">';
+    var ta = el.querySelector('textarea'); ta.style.height = Math.max(120, ta.scrollHeight + 4) + 'px';
+  }
   $('convo').addEventListener('click', function(e){
-    var tid = e.target.getAttribute('data-tid'); if (!tid || !e.target.classList.contains('edit-btn')) return;
-    var el = e.target.closest('.turn'); var t = current.turns.filter(function(x){ return x.id === tid; })[0];
-    el.innerHTML = '<span class="who">상담직원 답변 수정 (원본: ' + esc(t.original) + ')</span><textarea data-edit="' + tid + '">' + esc(t.final) + '</textarea>' +
-      '<input class="reason" data-note="' + tid + '" placeholder="수정 이유/메모(선택)" value="' + esc(t.note) + '">';
-    el.querySelector('textarea').focus(); dirty = true; msg('수정 중 — 아래 [저장]을 눌러야 서버에 저장됩니다.');
+    var b = e.target.closest('.edit-btn'); if (!b) return;
+    startEdit(b.getAttribute('data-tid'));
+    var ta = document.querySelector('[data-edit="' + b.getAttribute('data-tid') + '"]'); if (ta) ta.focus();
+    dirty = true; msg('고치는 중 — [저장]을 눌러야 저장됩니다. (저장 전 내용도 이 기기에 임시 보관됩니다)', 'info');
   });
-  $('caseNote').addEventListener('input', function(){ dirty = true; msg('수정 중 — [저장]을 눌러야 저장됩니다.'); });
-  $('status').addEventListener('change', function(){ dirty = true; });
+  $('status').addEventListener('change', function(){ dirty = true; saveDraft(); });
 
-  $('saveBtn').addEventListener('click', function(){
-    var edits = {}, notes = {};
-    document.querySelectorAll('[data-edit]').forEach(function(t){ edits[t.getAttribute('data-edit')] = t.value; });
-    document.querySelectorAll('[data-note]').forEach(function(t){ notes[t.getAttribute('data-note')] = t.value; });
-    $('saveBtn').disabled = true; msg('저장 중…');
-    api('/api/review?action=save&id=' + current.case.id, { method: 'PUT', body: { version: current.state.version, edits: edits, notes: notes, caseNote: $('caseNote').value, status: $('status').value } })
+  function doSave(){
+    var body = collect(); body.version = current.state.version;
+    $('saveBtn').disabled = true; $('saveNext').disabled = true; msg('저장 중…', 'info');
+    return api('/api/review?action=save&id=' + current.case.id, { method: 'PUT', body: body })
       .then(function(d){
-        if (d.ok) { dirty = false; return openCase(current.case.id, false).then(function(){ msg('저장했습니다 (버전 ' + d.state.version + ').', 'ok'); loadList(); }); }
-        msg(d.error || '저장하지 못했습니다.', 'err');
-      }).catch(function(){ msg('서버에 연결하지 못했습니다. 수정 내용은 화면에 남아 있으니 다시 저장해 주세요.', 'err'); })
-      .then(function(){ $('saveBtn').disabled = false; });
-  });
+        if (d.ok) { var id = current.case.id; dirty = false; clearDraft(id); return openCase(id, false).then(function(){ msg('저장했습니다 (버전 ' + d.state.version + ', ' + when(d.state.updatedAt) + ').', 'ok'); refreshItem(id, d.state); return true; }); }
+        msg(d.error || '저장하지 못했습니다. 고친 내용은 화면과 이 기기에 남아 있습니다.', 'err'); return false;
+      }).catch(function(){ msg('프로그램에 연결하지 못했습니다. 고친 내용은 화면과 이 기기에 남아 있으니 다시 [저장]을 눌러 주세요.', 'err'); return false; })
+      .then(function(ok){ $('saveBtn').disabled = false; renderNavButtons(); return ok; });
+  }
+  function renderNavButtons(){ if (!current) return; var p = position(); $('saveNext').disabled = p.idx >= p.ids.length - 1; }
+  function refreshItem(id, st){
+    items.forEach(function(i){ if (i.id === id) { i.status = st.status; i.edited = Object.keys(st.edits).length; } });
+    loadList();
+  }
+  $('saveBtn').addEventListener('click', doSave);
+  $('saveNext').addEventListener('click', function(){ doSave().then(function(ok){ if (ok) go(1, true); }); });
+  document.addEventListener('keydown', function(e){ if ((e.ctrlKey || e.metaKey) && e.key === 's' && !$('detail').hidden) { e.preventDefault(); doSave(); } });
+
+  function go(delta, skipCheck){
+    if (!current) return;
+    if (!skipCheck && dirty && !confirm('저장하지 않은 수정이 있습니다.\n[확인]을 누르면 저장하지 않고 이동합니다(이 기기에 임시 보관돼 돌아오면 되살아납니다).')) return;
+    var p = position(), n = p.idx + delta;
+    if (n < 0 || n >= p.ids.length) return;
+    saveDraft(); openCase(p.ids[n]);
+  }
+  $('prevBtn').addEventListener('click', function(){ go(-1); });
+  $('prev2').addEventListener('click', function(){ go(-1); });
+  $('nextBtn').addEventListener('click', function(){ go(1); });
 
   $('hist').addEventListener('click', function(e){
     var v = e.target.getAttribute('data-restore'); if (!v) return;
     if (!confirm('버전 ' + v + ' 상태로 되돌릴까요? (지금 상태도 이전 버전으로 보관됩니다)')) return;
     api('/api/review?action=restore&id=' + current.case.id, { method: 'POST', body: { targetVersion: Number(v), version: current.state.version } }).then(function(d){
-      if (d.ok) openCase(current.case.id, false).then(function(){ msg('버전 ' + v + '으로 복원했습니다.', 'ok'); loadList(); });
-      else msg(d.error || '복원하지 못했습니다.', 'err');
+      if (d.ok) { clearDraft(current.case.id); openCase(current.case.id, false).then(function(){ msg('버전 ' + v + '으로 되돌렸습니다.', 'ok'); loadList(); }); }
+      else msg(d.error || '되돌리지 못했습니다.', 'err');
     });
   });
 
   $('importFile').addEventListener('change', function(){
     var f = this.files[0]; if (!f) return;
     f.text().then(function(text){
-      var data; try { data = JSON.parse(text); } catch (e) { alert('JSON 파일을 읽지 못했습니다.'); return; }
-      if (!confirm((data.items || []).length + '건을 가져올까요? 서버 쪽이 더 최신인 사례는 건너뜁니다.')) return;
+      var data; try { data = JSON.parse(text); } catch (e) { alert('JSON 파일을 읽지 못했습니다. 기존 검토 내용은 그대로입니다.'); return; }
+      if (!confirm((data.items || []).length + '건이 든 백업을 가져올까요?\n(가져오기 전 지금 상태를 자동 백업합니다)')) return;
       api('/api/review?action=import', { method: 'POST', body: data }).then(function(d){
-        alert(d.ok ? d.applied + '건 반영했습니다.' : (d.error || '가져오지 못했습니다.')); loadList();
+        if (!d.ok) { alert(d.error || '가져오지 못했습니다. 기존 검토 내용은 그대로입니다.'); return; }
+        var t = '반영 ' + d.applied + '건 · 변경 없음 ' + d.unchanged + '건 · 건너뜀 ' + d.skipped + '건';
+        if (d.skipped && confirm(t + '\n\n건너뛴 ' + d.skipped + '건은 지금 저장된 내용이 백업보다 나중에 고친 것입니다.\n백업 시점으로 되돌릴까요? (지금 내용은 이전 버전으로 남습니다)')) {
+          return api('/api/review?action=import&overwriteNewer=1', { method: 'POST', body: data }).then(function(d2){ alert(d2.ok ? '백업 시점으로 되돌렸습니다: ' + d2.applied + '건' : (d2.error || '실패')); loadList(); });
+        }
+        alert(t); loadList();
       });
     });
     this.value = '';
   });
+  $('backupNow').addEventListener('click', function(){
+    api('/api/review?action=backup', { method: 'POST', body: {} }).then(function(d){ alert(d.ok ? '백업을 만들었습니다.' : (d.error || '실패')); loadBackups(); });
+  });
+  $('quitBtn').addEventListener('click', function(){
+    if (dirty && !confirm('저장하지 않은 수정이 있습니다. 그래도 종료할까요? (이 기기에 임시 보관됩니다)')) return;
+    saveDraft();
+    api('/api/local-shutdown', { method: 'POST', body: {} }).then(function(d){
+      document.body.innerHTML = '<main><h1>검토 프로그램을 종료했습니다</h1><p>저장한 내용은 남아 있습니다. 이 창을 닫고, 다시 보려면 바탕화면의 「크리너리 상담검토 열기」를 누르세요.</p></main>';
+    }).catch(function(){ document.body.innerHTML = '<main><h1>종료했습니다</h1><p>이 창을 닫아 주세요.</p></main>'; });
+  });
 
-  function showList(){ $('detail').hidden = true; $('listView').hidden = false; $('savebar').hidden = true; msg(''); }
-  $('backBtn').addEventListener('click', function(){ if (dirty && !confirm('저장하지 않은 수정이 있습니다. 목록으로 갈까요?')) return; history.pushState({}, '', location.pathname); showList(); });
+  function showList(){ $('detail').hidden = true; $('listView').hidden = false; $('savebar').hidden = true; msg(''); current = null; renderList(); }
+  $('backBtn').addEventListener('click', function(){ if (dirty && !confirm('저장하지 않은 수정이 있습니다. 목록으로 갈까요? (이 기기에 임시 보관됩니다)')) return; saveDraft(); dirty = false; history.pushState({}, '', location.pathname); showList(); });
   window.addEventListener('popstate', function(){ var id = location.hash.slice(1); if (id) openCase(id, false); else showList(); });
-  window.addEventListener('beforeunload', function(e){ if (dirty) { e.preventDefault(); e.returnValue = ''; } });
-  ['q', 'fCat', 'fStatus', 'onlyTodo'].forEach(function(id){ $(id).addEventListener('input', renderList); $(id).addEventListener('change', renderList); });
+  window.addEventListener('beforeunload', function(e){ saveDraft(); if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  ['q', 'fCat', 'fChannel', 'fDiff'].forEach(function(id){ $(id).addEventListener('input', renderList); $(id).addEventListener('change', renderList); });
+  $('chips').addEventListener('click', function(e){ var b = e.target.closest('[data-chip]'); if (!b) return; chip = b.getAttribute('data-chip'); document.querySelectorAll('.chip').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); renderList(); });
   $('list').addEventListener('click', function(e){ var b = e.target.closest('.item'); if (b) openCase(b.getAttribute('data-id')); });
 
   loadList().then(function(){ var id = location.hash.slice(1); if (id) openCase(id, false); });
