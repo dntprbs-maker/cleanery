@@ -3,10 +3,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { call, setupAdmin, loginCookie, resetStore, ADMIN_WRITE, store } = require('./helpers');
 
-const admin = require('../api/admin');
-const tracker = require('../api/tracker');
-const conversations = require('../api/conversations');
-const adminPage = require('../api/admin-page');
+const admin = require('../handlers/admin');
+const tracker = require('../handlers/tracker');
+const conversations = require('../handlers/conversations');
+const adminPage = require('../handlers/admin-page');
 const auth = require('../lib/auth');
 
 test.beforeEach(async () => {

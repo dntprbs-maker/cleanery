@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>크리너리 예약 관리</title>
+<script src="/assets/admin-nav.js"></script>
+<style>
+:root{--navy:#0f2a4a;--teal:#14a3a3;--bg:#f4f7fa;--card:#fff;--text:#16202c;--muted:#5b6b7c;--line:#e1e7ee;
+  --amber:#b45309;--amberbg:#fef3c7;--green:#15803d;--greenbg:#dcfce7;--red:#b42318;--redbg:#fee4e2;--blue:#1d4ed8;--bluebg:#dbeafe}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+main{max-width:980px;margin:0 auto;padding:14px 12px 60px}
+h1{font-size:21px;margin:6px 0 4px;color:var(--navy)}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px}
+.tabs button{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:40px}
+.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px rgba(15,42,74,.06)}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.name{font-weight:700;font-size:17px}
+.id{color:var(--muted);font-size:12px}
+.badge{display:inline-block;font-size:13px;font-weight:700;border-radius:999px;padding:4px 10px}
+.b-입금대기{background:var(--amberbg);color:var(--amber)} .b-입금확인요청{background:var(--redbg);color:var(--red)}
+.b-예약확정{background:var(--greenbg);color:var(--green)} .b-방문견적요청,.b-방문일정확정{background:var(--bluebg);color:var(--blue)}
+.b-작업완료{background:#e5e7eb;color:#374151} .b-취소{background:#f3f4f6;color:#6b7280;text-decoration:line-through}
+dl{display:grid;grid-template-columns:92px 1fr;gap:4px 10px;margin:10px 0;font-size:15px}
+dt{color:var(--muted)} dd{margin:0;word-break:break-all}
+.money{font-variant-numeric:tabular-nums}
+.pay{border-radius:10px;padding:10px;margin:8px 0;font-size:14px}
+.pay.claim{background:var(--redbg)} .pay.ok{background:var(--greenbg)} .pay.none{background:#f3f4f6}
+.edit{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;display:grid;gap:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,textarea,input[type=text]{font:inherit;border:1px solid #cfd8e3;border-radius:10px;padding:8px 10px;min-height:44px;width:100%}
+textarea{min-height:64px}
+label.chk{display:flex;gap:8px;align-items:center;font-weight:600;min-height:44px}
+label.chk input{width:22px;height:22px}
+button.save{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:0 18px;min-height:46px;font:inherit;font-weight:700;cursor:pointer}
+.msg{font-size:14px;min-height:20px}
+.msg.err{color:var(--red)} .msg.ok{color:var(--green)}
+details.hist{font-size:13px;color:var(--muted)} details.hist li{margin:2px 0}
+.notes h2{font-size:17px;margin:22px 0 8px;color:var(--navy)}
+.note{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:14px}
+.note .when{color:var(--muted);font-size:12px}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+@media(min-width:760px){.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{margin:0}}
+</style>
+</head>
+<body>
+<main>
+  <h1>예약 관리</h1>
+  <p class="sub">고객이 "입금했다"고 알린 것(입금확인요청)과 실제 계좌 입금 확인은 다릅니다. 실제 입금을 확인해 체크한 뒤에만 예약확정할 수 있습니다.</p>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="list"><div class="empty">불러오는 중…</div></div>
+  <section class="notes"><h2>관리자 알림함 <span id="mode" class="id"></span></h2><div id="notes"></div></section>
+</main>
+<script>
+(function(){
+  var data = { reservations: [], transitions: {}, notifications: [] }, filter = '진행중';
+  var ACTIVE = ['방문견적요청','방문일정확정','입금대기','입금확인요청','예약확정'];
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function won(n){ return n == null || n === '' ? '-' : Number(n).toLocaleString('ko-KR') + '원'; }
+  function when(s){ if(!s) return '-'; var d = new Date(s); return isNaN(d) ? esc(s) : d.toLocaleString('ko-KR', { timeZone:'Asia/Seoul', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+  function dateW(s){ if(!s) return '-'; var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); if(!m) return esc(s);
+    var w = '일월화수목금토'[new Date(Date.UTC(+m[1], +m[2]-1, +m[3])).getUTCDay()]; return (+m[2]) + '월 ' + (+m[3]) + '일(' + w + ')' + esc(s.slice(10)); }
+
+  function load(){
+    fetch('/api/reservations').then(function(r){ return r.json(); }).then(function(d){
+      if (!d.reservations) return;
+      data = d; render();
+    }).catch(function(){ document.getElementById('list').innerHTML = '<div class="empty">불러오지 못했습니다.</div>'; });
+  }
+
+  function render(){
+    var counts = { '진행중': 0, '전체': data.reservations.length };
+    data.reservations.forEach(function(r){ counts[r.status] = (counts[r.status]||0) + 1; if (ACTIVE.indexOf(r.status) >= 0) counts['진행중']++; });
+    var tabs = ['진행중','입금확인요청','입금대기','방문견적요청','예약확정','작업완료','취소','전체'];
+    document.getElementById('tabs').innerHTML = tabs.map(function(t){
+      return '<button type="button" data-t="' + t + '" class="' + (t === filter ? 'on' : '') + '">' + t + ' ' + (counts[t]||0) + '</button>';
+    }).join('');
+    var rows = data.reservations.filter(function(r){
+      return filter === '전체' ? true : filter === '진행중' ? ACTIVE.indexOf(r.status) >= 0 : r.status === filter;
+    });
+    document.getElementById('list').innerHTML = rows.length ? rows.map(card).join('') : '<div class="empty">해당하는 예약이 없습니다.</div>';
+    document.getElementById('mode').textContent = '· ' + (data.notifyMode || '');
+    document.getElementById('notes').innerHTML = (data.notifications || []).length ? data.notifications.map(function(n){
+      return '<div class="note"><div class="when">' + when(n.at) + (n.delivered ? ' · 발송됨' : ' · 발송 안 함(기록만)') + '</div><strong>' + esc(n.reason) + '</strong><div>' + esc(n.detail).replace(/\n/g,'<br>') + '</div></div>';
+    }).join('') : '<div class="empty">알림이 없습니다.</div>';
+  }
+
+  function card(r){
+    var next = data.transitions[r.status] || [];
+    var pay = r.paymentVerified
+      ? '<div class="pay ok">✅ 실제 입금 확인됨 — ' + when(r.paymentVerifiedAt) + ' (' + esc(r.paymentVerifiedBy) + ')</div>'
+      : r.paymentClaimedAt
+        ? '<div class="pay claim">⚠ 고객이 입금했다고 알림(입금자명: ' + esc(r.depositorName || '미상') + ', ' + when(r.paymentClaimedAt) + ') — 아직 실제 확인 전</div>'
+        : '<div class="pay none">입금 알림 없음</div>';
+    return '<article class="card" data-id="' + esc(r.id) + '">' +
+      '<div class="top"><div><div class="name">' + esc(r.customerName || '(이름 미확인)') + '</div><div class="id">' + esc(r.id) + ' · ' + (r.channel === 'web' ? '홈페이지' : '카카오톡') + '</div></div>' +
+      '<span class="badge b-' + esc(r.status) + '">' + esc(r.status) + '</span></div>' +
+      '<dl>' +
+        '<dt>연락처</dt><dd>' + (r.phone ? '<a href="tel:' + esc(r.phone) + '">' + esc(r.phone) + '</a>' : '-') + '</dd>' +
+        '<dt>주소</dt><dd>' + esc(r.address || '-') + '</dd>' +
+        (r.visitAt ? '<dt>방문 희망</dt><dd>' + dateW(r.visitAt) + '</dd>' : '<dt>청소 희망일</dt><dd>' + dateW(r.desiredDate) + '</dd>') +
+        '<dt>청소</dt><dd>' + esc([r.cleaningType, r.buildingType, r.areaPyeong ? r.areaPyeong + '평' : ''].filter(Boolean).join(' · ') || '-') + '</dd>' +
+        '<dt>견적</dt><dd class="money">' + won(r.quoteAmount) + (r.quoteAmount ? ' (VAT별도)' : '') + '</dd>' +
+        '<dt>계약금</dt><dd class="money">' + won(r.deposit) + '</dd>' +
+        '<dt>잔금</dt><dd class="money">' + won(r.balance) + '</dd>' +
+        (r.notes ? '<dt>특이사항</dt><dd>' + esc(r.notes) + '</dd>' : '') +
+      '</dl>' + pay +
+      '<div class="edit">' +
+        '<label class="chk"><input type="checkbox" class="f-paid"' + (r.paymentVerified ? ' checked' : '') + '> 실제 계좌 입금을 확인했습니다</label>' +
+        '<div class="row"><select class="f-status"><option value="">상태 유지 (' + esc(r.status) + ')</option>' +
+          next.map(function(s){ return '<option value="' + esc(s) + '">→ ' + esc(s) + '</option>'; }).join('') + '</select></div>' +
+        '<textarea class="f-memo" placeholder="관리자 메모">' + esc(r.adminMemo || '') + '</textarea>' +
+        '<div class="row"><button type="button" class="save">저장</button><span class="msg"></span></div>' +
+        '<details class="hist"><summary>처리 기록 ' + (r.history || []).length + '건</summary><ul>' +
+          (r.history || []).slice().reverse().map(function(h){ return '<li>' + when(h.at) + ' · ' + esc(h.by) + ' · ' + esc(h.action) + '</li>'; }).join('') + '</ul></details>' +
+      '</div></article>';
+  }
+
+  document.getElementById('tabs').addEventListener('click', function(e){
+    var t = e.target.getAttribute('data-t'); if (!t) return; filter = t; render();
+  });
+  document.getElementById('list').addEventListener('click', function(e){
+    if (!e.target.classList.contains('save')) return;
+    var el = e.target.closest('.card'), id = el.getAttribute('data-id');
+    var r = data.reservations.filter(function(x){ return x.id === id; })[0];
+    var msg = el.querySelector('.msg'); msg.className = 'msg'; msg.textContent = '저장 중…';
+    var body = { version: r.version || 1, paymentVerified: el.querySelector('.f-paid').checked, fields: { adminMemo: el.querySelector('.f-memo').value } };
+    var st = el.querySelector('.f-status').value; if (st) body.status = st;
+    fetch('/api/reservations?id=' + encodeURIComponent(id), { method: 'PATCH', headers: { 'Content-Type':'application/json', 'X-Cleanery-Admin':'1' }, body: JSON.stringify(body) })
+      .then(function(res){ return res.json().then(function(d){ return { res: res, d: d }; }); })
+      .then(function(x){
+        if (x.d.ok){ Object.assign(r, x.d.record); render(); }
+        else { msg.className = 'msg err'; msg.textContent = x.d.error || '저장하지 못했습니다.'; if (x.res.status === 409) load(); }
+      }).catch(function(){ msg.className = 'msg err'; msg.textContent = '서버에 연결하지 못했습니다.'; });
+  });
+  load();
+})();
+</script>
+</body>
+</html>

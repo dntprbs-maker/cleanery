@@ -46,7 +46,7 @@ async function setupAdmin(password = 'correct-horse-battery') {
 }
 
 async function loginCookie(password = 'correct-horse-battery', ip = '10.0.0.50') {
-  const admin = require('../api/admin');
+  const admin = require('../handlers/admin');
   const res = await call(admin, { method: 'POST', query: { action: 'login' }, headers: ADMIN_WRITE, body: { username: 'admin', password }, ip });
   if (res.statusCode !== 200) throw new Error('login failed in test: ' + JSON.stringify(res.body));
   return String(res.headers['set-cookie']).split(';')[0];
