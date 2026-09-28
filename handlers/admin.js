@@ -20,6 +20,19 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // 개발 미리보기 전용 진단: 메모리 저장소가 요청 사이에 유지되는지 확인(운영에서는 404)
+  if (action === 'store-probe' && req.method === 'GET') {
+    const store = require('../lib/store');
+    if (!require('../lib/demo').isDemo()) {
+      res.status(404).json({ ok: false });
+      return;
+    }
+    if (!global.__cleaneryInstanceId) global.__cleaneryInstanceId = require('crypto').randomBytes(4).toString('hex');
+    const n = await store.cmd('INCR', 'cleanery:demo:probe');
+    res.status(200).json({ ok: true, instance: global.__cleaneryInstanceId, count: Number(n), memory: store.isMemory() });
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.status(405).json({ ok: false, error: 'method not allowed' });
     return;

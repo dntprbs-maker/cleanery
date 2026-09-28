@@ -32,12 +32,23 @@ async function migrateLegacyOnce() {
     return; // 해석 못 하면 표시도 남기지 않아 다음에 다시 시도
   }
   const now = new Date().toISOString();
-  for (const rec of Array.isArray(legacy) ? legacy : []) {
-    if (!rec || !rec.id) continue;
-    await store.cmd('HSETNX', HASH_KEY, String(rec.id), JSON.stringify({
-      ...rec, _version: 1, _createdAt: now, _updatedAt: now, _migratedFrom: LEGACY_KEY,
+  const seen = new Set();
+  const list = Array.isArray(legacy) ? legacy : [];
+  for (let i = 0; i < list.length; i++) {
+    const rec = list[i];
+    if (!rec || typeof rec !== 'object') continue;
+    // id 가 없거나 배열 안에서 중복되면, 누락되지 않도록 순번 기반의 고정 id 를 새로 붙입니다(원본 id 는 _legacyId 로 보존).
+    // 같은 순번이면 항상 같은 id 가 되므로, 복사가 중간에 멈춰 다시 실행돼도 중복 생성되지 않습니다.
+    let id = rec.id ? String(rec.id) : '';
+    if (!id || seen.has(id)) id = `legacy-${i}-${crypto.createHash('sha1').update(JSON.stringify(rec)).digest('hex').slice(0, 8)}`;
+    seen.add(id);
+    // HSETNX: 이미 새 저장소에 있는 기록(이전 실행에서 복사됐거나 이후 수정된 기록)은 절대 덮어쓰지 않음
+    await store.cmd('HSETNX', HASH_KEY, id, JSON.stringify({
+      ...rec, id: undefined, _legacyId: rec.id === undefined ? null : rec.id, _legacyIndex: i,
+      _version: 1, _createdAt: now, _updatedAt: now, _migratedFrom: LEGACY_KEY,
     }));
   }
+  // 모든 기록을 복사한 뒤에만 완료 표시 → 중간에 멈추면 다음 조회 때 남은 기록부터 다시 복사
   await store.cmd('SET', MIGRATED_KEY, now, 'NX');
 }
 
