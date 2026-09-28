@@ -1,32 +1,16 @@
-// 상담내역(카카오봇 대화) 조회용 관리자 API
+// 상담내역(카카오봇·홈페이지 대화) 조회용 관리자 API — 관리자 로그인 필요 (고객 개인정보 포함)
 // GET /api/conversations          -> 대화 목록 (최근 순, 미리보기 포함)
 // GET /api/conversations?id=userId -> 특정 유저와의 전체 대화 내용
 //
-// [주의] 지금은 테스트 단계라 별도 인증이 없습니다. 실제 운영 전에는
-// 반드시 아이디/비밀번호 등 접근 제한을 추가해야 합니다 (고객 개인정보 포함).
-const INDEX_KEY = 'cleanery:sessions:index';
-
-function sessionKeyFor(userId) {
-  return `cleanery:session:${userId}`;
-}
-
-async function upstash(pathSegments) {
-  const base = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!base || !token) {
-    throw new Error('KV_REST_API_URL / KV_REST_API_TOKEN 환경변수가 설정되지 않았습니다.');
-  }
-  const url = `${base}/${pathSegments.map(encodeURIComponent).join('/')}`;
-  const r = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!r.ok) {
-    throw new Error(`Upstash 요청 실패 (status ${r.status})`);
-  }
-  return r.json();
-}
+// 60일이 지나 대화 본문이 만료된 항목은 목록에서 숨깁니다(목록 인덱스 자체는 지우지 않음).
+const store = require('../lib/store');
+const { requireAdmin } = require('../lib/auth');
+const { INDEX_KEY, keyFor } = require('../lib/session-store');
 
 module.exports = async (req, res) => {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'method not allowed' });
     return;
@@ -34,46 +18,46 @@ module.exports = async (req, res) => {
 
   const id = req.query && req.query.id;
 
-  // 특정 유저의 전체 대화 조회
   if (id) {
     try {
-      const data = await upstash(['get', sessionKeyFor(id)]);
-      const session = data && data.result ? JSON.parse(data.result) : { messages: [] };
-      res.status(200).json({ userId: id, messages: session.messages || [] });
+      const raw = await store.cmd('GET', keyFor(id));
+      const session = raw ? JSON.parse(raw) : { messages: [] };
+      res.status(200).json({ userId: id, messages: session.messages || [], restartedAt: session.restartedAt || null });
     } catch (e) {
       console.error('[conversations] detail load failed:', e.message);
-      res.status(200).json({ userId: id, messages: [] });
+      res.status(500).json({ userId: id, messages: [], error: '대화를 불러오지 못했습니다.' });
     }
     return;
   }
 
-  // 전체 대화 목록 (최근 순)
   try {
-    const data = await upstash(['zrevrange', INDEX_KEY, '0', '99', 'withscores']);
-    const flat = (data && data.result) || [];
+    const flat = (await store.cmd('ZREVRANGE', INDEX_KEY, '0', '99', 'WITHSCORES')) || [];
     const sessions = [];
-    for (let i = 0; i < flat.length; i += 2) {
-      sessions.push({ userId: flat[i], updatedAt: Number(flat[i + 1]) });
-    }
+    for (let i = 0; i < flat.length; i += 2) sessions.push({ userId: flat[i], updatedAt: Number(flat[i + 1]) });
 
     const withPreview = await Promise.all(
       sessions.map(async (s) => {
         try {
-          const d = await upstash(['get', sessionKeyFor(s.userId)]);
-          const session = d && d.result ? JSON.parse(d.result) : { messages: [] };
-          const msgs = session.messages || [];
+          const raw = await store.cmd('GET', keyFor(s.userId));
+          if (!raw) return null; // 만료된 대화
+          const msgs = JSON.parse(raw).messages || [];
           const last = msgs[msgs.length - 1];
-          const preview = last ? String(last.content || '').slice(0, 60) : '';
-          return { ...s, preview, messageCount: msgs.length };
+          return {
+            ...s,
+            channel: String(s.userId).startsWith('web:') ? '홈페이지' : '카카오톡',
+            preview: last ? String(last.content || '').replace(/\[\[[^\]]*\]\]/g, '').slice(0, 60) : '',
+            messageCount: msgs.length,
+          };
         } catch (e) {
           return { ...s, preview: '', messageCount: 0 };
         }
       })
     );
 
-    res.status(200).json({ sessions: withPreview });
+    const visible = withPreview.filter(Boolean);
+    res.status(200).json({ sessions: visible, hiddenExpired: withPreview.length - visible.length });
   } catch (e) {
     console.error('[conversations] list failed:', e.message);
-    res.status(200).json({ sessions: [] });
+    res.status(500).json({ sessions: [], error: '목록을 불러오지 못했습니다.' });
   }
 };

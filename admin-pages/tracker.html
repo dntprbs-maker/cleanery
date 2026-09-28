@@ -272,6 +272,8 @@
     header{padding:22px 16px 20px;}
   }
 </style>
+<meta name="robots" content="noindex,nofollow">
+<script src="/assets/admin-nav.js"></script>
 </head>
 <body>
 
@@ -487,28 +489,41 @@ function showToast(msg){
   t._timer = setTimeout(()=> t.classList.remove('show'), 1800);
 }
 
+// [2026-09-28] 기록을 1건씩 저장합니다(전체 목록 덮어쓰기 없음). 관리자 로그인이 필요합니다.
+async function trackerApi(method, query, body){
+  const res = await fetch('/api/tracker' + (query || ''), {
+    method,
+    headers: { 'Content-Type': 'application/json', 'X-Cleanery-Admin': '1' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401){
+    location.href = '/admin/login?next=' + encodeURIComponent('/admin/tracker');
+    throw new Error('login required');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || '저장 중 오류가 발생했어요'), { status: res.status, data });
+  return data;
+}
+
 async function loadRecords(){
   try{
-    const res = await fetch('/api/tracker');
-    const data = await res.json();
+    const data = await trackerApi('GET');
     records = data.records || [];
   }catch(e){
+    if (e.message !== 'login required') showToast('기록을 불러오지 못했어요');
     records = [];
   }
   renderList();
 }
 
-async function persist(){
-  try{
-    const r = await fetch('/api/tracker', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ records })
-    });
-    if (!r.ok) throw new Error('save failed');
-  }catch(e){
-    showToast('저장 중 오류가 발생했어요');
+function handleSaveError(e){
+  if (e.message === 'login required') return;
+  if (e.status === 409){
+    showToast('다른 곳에서 먼저 수정된 기록이라 새로 불러왔어요. 다시 수정해 주세요');
+    loadRecords();
+    return;
   }
+  showToast(e.message || '저장 중 오류가 발생했어요');
 }
 
 function readForm(){
@@ -579,22 +594,36 @@ async function saveRecord(){
     showToast('현장명을 입력해주세요');
     return;
   }
-  if (editingId){
-    const idx = records.findIndex(r => r.id === editingId);
-    if (idx > -1) records[idx] = { ...records[idx], ...data };
-    showToast('기록을 수정했어요');
-  } else {
-    records.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), ...data });
-    showToast('새 기록을 저장했어요');
+  try{
+    if (editingId){
+      const cur = records.find(r => r.id === editingId);
+      const out = await trackerApi('PUT', '?id=' + encodeURIComponent(editingId), { record: data, version: cur ? cur._version : undefined });
+      const idx = records.findIndex(r => r.id === editingId);
+      if (idx > -1) records[idx] = out.record;
+      showToast('기록을 수정했어요');
+    } else {
+      const out = await trackerApi('POST', '', { record: data });
+      records.push(out.record);
+      showToast('새 기록을 저장했어요');
+    }
+  }catch(e){
+    handleSaveError(e);
+    return;
   }
-  await persist();
   resetForm();
   renderList();
 }
 
 async function deleteRecord(id){
+  const cur = records.find(r => r.id === id);
+  if (!cur || !confirm('이 기록을 삭제할까요? (삭제 표시만 되고 서버에는 보관됩니다)')) return;
+  try{
+    await trackerApi('DELETE', '?id=' + encodeURIComponent(id), { version: cur._version });
+  }catch(e){
+    handleSaveError(e);
+    return;
+  }
   records = records.filter(r => r.id !== id);
-  await persist();
   renderList();
   showToast('기록을 삭제했어요');
 }
@@ -671,7 +700,6 @@ function renderList(){
 
 async function addSampleRecord(){
   const sample = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     date: new Date().toISOString().slice(0,10),
     site: '역삼동 A사무실',
     type: '사무실',
@@ -692,8 +720,13 @@ async function addSampleRecord(){
     satisfaction: '만족, 재계약 의향 있음',
     memo: '다음엔 유리 별도 견적 필요',
   };
-  records.push(sample);
-  await persist();
+  try{
+    const out = await trackerApi('POST', '', { record: sample });
+    records.push(out.record);
+  }catch(e){
+    handleSaveError(e);
+    return;
+  }
   renderList();
   showToast('샘플 데이터를 추가했어요 (테스트용)');
 }

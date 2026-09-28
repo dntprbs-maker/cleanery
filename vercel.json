@@ -1,0 +1,24 @@
+{
+  "outputDirectory": "public",
+  "functions": {
+    "api/admin-page.js": { "includeFiles": "admin-pages/**" }
+  },
+  "redirects": [
+    { "source": "/tracker.html", "destination": "/admin/tracker", "permanent": false },
+    { "source": "/conversations.html", "destination": "/admin/conversations", "permanent": false },
+    { "source": "/admin", "destination": "/admin/reservations", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/admin/login", "destination": "/admin/login.html" },
+    { "source": "/admin/:page(tracker|conversations|reservations)", "destination": "/api/admin-page?page=:page" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}
