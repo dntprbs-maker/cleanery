@@ -360,3 +360,17 @@ test('카카오: 같은 사용자의 같은 말이 처리 중에 다시 오면 A
   const c = await call(kakao, { method: 'POST', body });
   assert.equal(c.body.template.outputs[0].simpleText.text, '두 번째 답', '처리 끝난 뒤에는 정상 처리');
 });
+
+test('아파트: 견적을 말한 뒤에도 방·화장실 개수를 되묻으면 규칙 위반 (실제 AI 시험 B01 재현)', () => {
+  const rules = require('../lib/consult-rules');
+  const history = [{ role: 'user', content: '아파트 34평 신축 입주청소 얼마예요?' }];
+  const state = rules.conversationState(history);
+  const answer = '34평 신축 아파트 입주청소는 약 340,000원(VAT별도)입니다.\n\n화장실이 3개 이상이면 추가요금이 발생할 수 있으니, 화장실이 몇 개인지 알려주시겠어요?';
+  assert.match(String(rules.detectViolation(answer, state)), /방·화장실 개수/);
+  // 개수를 묻지 않고 "다르면 알려 달라"는 안내는 허용
+  const ok = '34평 신축 아파트 입주청소는 약 340,000원(VAT별도)입니다. 화장실이 3개 이상이면 추가요금이 있으니 그런 경우 말씀해 주세요.';
+  assert.equal(rules.detectViolation(ok, state), null);
+  // 빌라는 개수를 물어야 하므로 위반 아님
+  const villa = rules.conversationState([{ role: 'user', content: '빌라 전용 20평이에요' }]);
+  assert.equal(rules.detectViolation('방과 화장실은 몇 개인가요?', villa), null);
+});

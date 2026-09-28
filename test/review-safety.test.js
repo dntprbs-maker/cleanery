@@ -45,6 +45,16 @@ test('저장 → 프로그램 종료·재실행 → 수정·메모·상태 그�
   assert.equal(r.body.state.status, '수정 중');
 });
 
+test('화면이 상태 "미검토"를 그대로 보내도, 답변을 고치면 자동으로 "수정 중"', async () => {
+  const cookie = await loginCookie();
+  const tid = await staffTurn(cookie, 'C006');
+  const r = await save(cookie, 'C006', { version: 0, edits: { [tid]: '고침' }, notes: {}, caseNote: '', status: '미검토' });
+  assert.equal(r.body.state.status, '수정 중');
+  // 이미 다른 상태를 고른 경우는 그대로
+  const r2 = await save(cookie, 'C006', { version: 1, edits: { [tid]: '또 고침' }, status: '보류' });
+  assert.equal(r2.body.state.status, '보류');
+});
+
 test('여러 사례 연속 수정 후 재실행 — 서로 섞이지 않고 모두 유지', async () => {
   const cookie = await loginCookie();
   const ids = ['C001', 'C010', 'C050', 'C099'];
@@ -168,6 +178,23 @@ test('잘못된 백업 파일은 한 건도 반영하지 않고 기존 데이터
   const after = await getCase(cookie, 'C008');
   assert.equal(after.body.turns.find((t) => t.id === tid).final, '지켜야 할 수정');
   assert.equal(after.body.state.version, 1, '버전도 그대로');
+});
+
+test('기준 후보: 고치지 않은 "검토 포인트" 답변은 제외하고 따로 알림, 고친 답변은 포함', async () => {
+  const cookie = await loginCookie();
+  const c5 = await getCase(cookie, 'C005');
+  const flagged = c5.body.turns.find((t) => t.issue);
+  assert.ok(flagged, 'C005 에 검토 포인트가 있어야 함');
+  await save(cookie, 'C005', { version: 0, status: '검토 완료' }); // 고치지 않고 완료
+  let s = (await call(reviewApi, { cookie, query: { action: 'standards' } })).body;
+  const allRefs = s.topics.flatMap((t) => t.groups.flatMap((g) => g.members.map((m) => m.ref)));
+  assert.ok(!allRefs.includes(`#5-${flagged.id}`), '고치지 않은 문제 답변은 기준 후보 아님');
+  assert.ok(s.unfixedIssues.some((u) => u.ref === `#5-${flagged.id}`));
+  await save(cookie, 'C005', { version: 1, edits: { [flagged.id]: '팀장님 확인 후 문자로 남기겠습니다' }, status: '검토 완료' });
+  s = (await call(reviewApi, { cookie, query: { action: 'standards' } })).body;
+  assert.ok(s.topics.flatMap((t) => t.groups.flatMap((g) => g.members)).some((m) => m.ref === `#5-${flagged.id}` && m.edited));
+  assert.equal(s.unfixedIssues.length, 0);
+  assert.equal(s.appliedToBot, false);
 });
 
 test('이전 버전 복원도 재실행 후 유지', async () => {

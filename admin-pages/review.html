@@ -333,7 +333,10 @@ details.tools summary{cursor:pointer;font-weight:700;color:var(--navy);min-heigh
     loadList();
   }
   $('saveBtn').addEventListener('click', doSave);
-  $('saveNext').addEventListener('click', function(){ doSave().then(function(ok){ if (ok) go(1, true); }); });
+  $('saveNext').addEventListener('click', function(){
+    var no = current && current.case.no;
+    doSave().then(function(ok){ if (ok) { var p = go(1, true); if (p) p.then(function(){ msg(String(no).padStart(3, '0') + '번을 저장하고 다음 상담으로 왔습니다.', 'ok'); }); } });
+  });
   document.addEventListener('keydown', function(e){ if ((e.ctrlKey || e.metaKey) && e.key === 's' && !$('detail').hidden) { e.preventDefault(); doSave(); } });
 
   function go(delta, skipCheck){
@@ -341,7 +344,7 @@ details.tools summary{cursor:pointer;font-weight:700;color:var(--navy);min-heigh
     if (!skipCheck && dirty && !confirm('저장하지 않은 수정이 있습니다.\n[확인]을 누르면 저장하지 않고 이동합니다(이 기기에 임시 보관돼 돌아오면 되살아납니다).')) return;
     var p = position(), n = p.idx + delta;
     if (n < 0 || n >= p.ids.length) return;
-    saveDraft(); openCase(p.ids[n]);
+    saveDraft(); return openCase(p.ids[n]);
   }
   $('prevBtn').addEventListener('click', function(){ go(-1); });
   $('prev2').addEventListener('click', function(){ go(-1); });
